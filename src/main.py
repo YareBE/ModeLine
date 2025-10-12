@@ -8,7 +8,7 @@ import sqlite3
 import openpyxl
 import os  
  
-path = "housing.xlsx"
+path = "data/housing.xlsx"
  
 # Verificar si el archivo existe
 if not os.path.exists(path):
@@ -35,9 +35,21 @@ try:
     else:
         raise ValueError(f"Extension not supported: '{extension}'")
    
-    # Mostrar las primeras filas del DataFrame
+    # Mostramos las primeras filas del DataFrame y la información más importante para saber como tratar los datos
+    print("Datos tras la importación")
     print(data.head())
- 
+    print()
+    print(data.info())
+    
+    # Los tipos de datos y campos numéricos son correctos
+    # Sustituimos los datos faltantes en la columna total_bedrooms por la media de la variable
+    data['total_bedrooms'].fillna(data['total_bedrooms'].mean(), inplace=True)
+    
+    print("Datos tras la corrección")
+    print(data.head())
+    print()
+    print(data.info())
+
 except FileNotFoundError as fnf_error:
     print(f"Error: {fnf_error}")
 except ValueError as val_error:
@@ -46,3 +58,5 @@ except pd.errors.EmptyDataError:
     print("Error: The file is empty")
 except Exception as e:
     print(f"Unexpected error: {e}") 
+
+
