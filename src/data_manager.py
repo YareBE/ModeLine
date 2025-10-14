@@ -7,32 +7,32 @@ class DataUploader:
     of the selected file in the interface
     """
     def __init__(self, file):
-        self.__file = file
+        self._file = file
     
     def error_handle(self):
-        extension = self.__file.name.split('.')[-1].lower()
+        extension = self._file.name.split('.')[-1].lower()
         #Set the pointer of the file-like variable to the beginning
         assert extension in ('csv', 'xls', 'xlsx', 'db', 'sqlite'), \
         "ERROR: Invalid extension"
-        self.__file.seek(0) 
+        self._file.seek(0) 
         if extension == 'csv':
             data = self._upload_csv()
         elif extension in ('xls', 'xlsx'):
             data = self._upload_excel()
         elif extension in ('db', 'sqlite'):
-            data = self._upload_sql()
+            data = self._upload_sql(self._file)
         return data
     
     def _upload_csv(self):
         try:
-            data = pd.read_csv(self.__file)
+            data = pd.read_csv(self._file)
             return data
         except pd.errors.EmptyDataError:
             raise Exception("ERROR: the selected file is empty")
         
     def _upload_excel(self):
         try:
-            data = pd.read_excel(self.__file, engine = 'openpyxl')
+            data = pd.read_excel(self._file, engine = 'openpyxl')
             return data
         except pd.errors.EmptyDataError:
             raise Exception("ERROR: the selected file is empty")
