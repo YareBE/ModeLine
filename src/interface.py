@@ -1,37 +1,61 @@
 import streamlit as st
 import time
 from data_manager import DataUploader
+import pandas as pd
 
-def data_preview(data):
-    st.dataframe(data=data)
+def data_display(data: pd.DataFrame, type = "preview" or "full"):
+    if type == 'preview':
+        st.dataframe(data.head(min(10, len(data))))
+    else:
+        st.dataframe(data)
 
-
-if __name__ == '__main__':
-    st.title("ModeLine")
-
-    st.session_state.data_file = st.file_uploader(
+#cache_data optimizes computation time by storing function results
+@st.cache_data 
+def file_filter(data_file):
+    with st.status(label = "Loading data...", state = "running") as status:
+            try:
+                selected_file = DataUploader(data_file)
+                dataset = selected_file.error_handler()
+            except Exception as err:
+                status.update(label = f"Error while reading the file: {err}",
+                    state = "error")
+                if st.button("RETRY", type = 'primary'):
+                    st.rerun()
+            status.update(label = "blue-background[Data correctly uploaded]",
+                         state = "complete")
+    return dataset
+    
+def upload_file():
+    data_file = st.file_uploader(
         "You can select only 1 file",
         type=["csv", "xls", "xlsx", "db", "sqlite"] 
     )
-
-    if "data_file" not in st.session_state:
-        st.badge("You have not selected any file yet", icon=":material/warning:", color="yellow")
-    
-    if st.session_state.data_file is not None:
-        try:
-            # Upload data
-            with st.status("Loading data..."):
-                whole_file = DataUploader(st.session_state.data_file)
-                st.session_state.dataset = whole_file.error_handle()
-
-        except Exception as err:
-            st.error(err)
-            file_reload = st.button("RETRY", type = 'primary')
-            if file_reload:
-                del st.session_state['data_file']
+    if data_file is None:
+        st.badge("You have not selected any file yet",\
+                  icon=":material/warning:", color="yellow")
+    else:
+        data_file = file_filter(data_file)
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.checkbox("PREVIEW"):
+                data_display(data_file, "preview")
+        with col2:
+            if st.button("CHANGE DATASET", type = "primary"):
+                st.rerun()
+        with col3:
+            if st.button("CONFIRM", type = 'primary'):
+                dataset = data_file
         
-        st.button("RELOAD", type = 'primary',\
-                 on_click = data_preview(st.session_state.dataset))
+
+
+        
+def main():
+    st.title("ModeLine")
+    full_dataset = upload_file()
+    st.badge("Dataset correctly processed", icon = ":material/check:", color = "green")
+    data_display(full_dataset, type = "full")
 
 
 
+if __name__ == '__main__':
+    main()

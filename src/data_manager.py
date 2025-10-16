@@ -9,7 +9,7 @@ class DataUploader:
     def __init__(self, file):
         self._file = file
     
-    def error_handle(self):
+    def error_handler(self):
         extension = self._file.name.split('.')[-1].lower()
         #Set the pointer of the file-like variable to the beginning
         assert extension in ('csv', 'xls', 'xlsx', 'db', 'sqlite'), \
