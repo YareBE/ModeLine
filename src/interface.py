@@ -22,7 +22,7 @@ class Interface():
             else:
                 st.dataframe(data)
 
-    #cache_data optimizes computation time by storing function results
+    # Cache_data optimizes computation time by storing function results
     @staticmethod  # Removes the self requirement
     @st.cache_data 
     def file_filter(data_file):
@@ -69,6 +69,7 @@ class Interface():
                     st.session_state.full_dataset = data_file
                     st.session_state.page = "DatasetManager"
                     st.rerun()
+                    
             with col3:
                 if st.button("Change Dataset", type='primary'):
                     self.restart_app()
@@ -85,6 +86,60 @@ class Interface():
             if st.button("Go to Upload", type = "primary"):
                 st.session_state.page = "FileUploader"
                 st.rerun()
+    
+    def detect_na(self):
+        # Save the dataset in a local variable
+        df = st.session_state.full_dataset
+
+        # Count NA values in the entire dataframe
+        count_na = df.isna().sum().sum() 
+        # Get columns with NA values
+        columns_na = df.columns[df.isna().any() > 0].tolist()
+        # Display NA values info
+        st.badge(label=f"There are {count_na} missing values" 
+                       f" in the columns: {columns_na}", 
+                       icon=':material/report:', color='yellow') 
+
+        if count_na > 0:
+            # Highlight missing values in the dataframe
+            st.dataframe(df.style.highlight_null(color='yellow'))
+            
+            # Select box to choose options for NaN substitution
+            options = ['Delete rows', 'Average', 'Median', 'Constant']
+            select = st.selectbox('Select an option to substitute'
+                                  'missing values:', options)
+
+            constant = None # Text input for constant
+            if select == "Constant":
+                constant = st.text_input(label="Introduce a constant to substitute NaN values")
+
+            if st.button("CONFIRM", type="primary"):
+                if select == "Delete rows":
+                    df = df.dropna()
+                elif select == "Average":
+                    df = df.fillna(df.mean(numeric_only=True).astype(int))
+                elif select == "Median":
+                    df = df.fillna(df.median(numeric_only=True).astype(int))
+                elif select == "Constant":
+                    if constant:
+                        try:
+                            constant_value = int(constant)
+                            df = df.fillna(constant_value)
+                        except ValueError:
+                            st.error("Please enter a valir integer constant")
+                            return
+                else:
+                    st.error("You have not selected any option")
+                    return
+            
+                # Update session_state after succesful operation
+                st.session_state.full_dataset = df
+                st.badge(label=f"Missing values"
+                                        f"handled succesfully using: {select}",
+                                        icon=":material/thumbs_up_double:", color="green") 
+                st.rerun()
+            
+
 
 
     def main(self):
@@ -97,6 +152,7 @@ class Interface():
             self.upload_file()
         elif st.session_state.page == "DatasetManager":
             self.data_selection()
+            self.detect_na()
 
 if __name__ == '__main__':
     interface = Interface()
