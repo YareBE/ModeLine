@@ -1,0 +1,58 @@
+Dear PyGUI 
+According to its documentation Dear PyGui "is an easy-to-use, dynamic, GPU-
+Accelerated, cross-platform graphical user interface toolkit (GUI) for Python."
+
+Between the key features of this framework are: It provides many traditional GUI 
+elements like buttons, menus as well as dynamic plots, tables, and interactive drawings. 
+Besides, allows you to create both fast, simple and interactive interfaces, but also 
+complex graphical applications. It offers you the chance to control the exact location 
+and aspect of every part of the GUI, making it more flexible than PySimpleGUI. Lastly,
+its built on GPU and OpenGL, enabling fast visualizations
+
+Some of the drawbacks are that is harder to learn and use, compared to PySimpleGui. 
+Another problem of Dear PyGUI is the lack of examples and documentation, making it 
+more difficult to understand.
+
+
+In the link below we include a showcase of what Dear PyGui is capable of doing:
+https://github.com/hoffstadt/DearPyGui/wiki/Dear-PyGui-Showcase 
+
+To start you can view its tutorials or explore its demo: dearpygui.demo.show_demo() 
+
+PySimpleGUI
+PySimpleGUI aim is to simplify GUI application development for Python. Referring 
+to its web "PySimpleGUI helps you create graphical user interfaces easily, the 
+way coding in Python is supposed to be!" 
+
+One of its main attractions is that it offers a wrapper around other existing 
+frameworks like Tkinter, Qt, WxPython and Remi, what allows you to easily migrate 
+from one GUI framework to another by simply changing the import statement.
+
+There is a fair amount of good resources to help you learn to use PySimpleGUI, including
+and official cookbood and a Udemy course. What's more, this framework was originally 
+made because the lead developer wanted a 'simplified' GUI to use in his upcoming project.
+
+Some of the limitations of this framework are that it does not have as much control
+over the the exact placement and appearance of GUI elements and that it is not optimized
+for highly dynamic or graphic-intensive application like Dear PyGuil
+
+This is an example of the code to create a simple app:
+ 
+import PySimpleGUI as sg
+
+
+layout = [
+    [sg.Button("My simple app.")]
+]
+
+window = sg.Window("Hello World", layout)
+
+while True:
+    event, values = window.read()
+    print(event, values)
+    if event == sg.WIN_CLOSED or event == "My simple app.":
+        break
+
+window.close()
+
+
