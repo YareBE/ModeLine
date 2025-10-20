@@ -207,14 +207,14 @@ class Interface():
             train_size = train_size*0.01,      # 20% para test
             random_state = 1     # Semilla para reproducibilidad
         )
-        st.write("Number of training rows", len(X_train))
-        st.write("Number of test rows", len(X_test))
-
-    
-
-        
-
-        
+        if train_size < 50:
+            st.error("The number of data to split the dataset is not enugh")
+        else:
+            st.write("Number of training rows", len(X_train))
+            st.write("Number of test rows", len(X_test))
+            st.badge(label=f"Data split done correctly",
+                           icon=":material/done_outline:", color="green")
+                
     def main(self):
         st.title("ModeLine")
         st.divider()
