@@ -8,6 +8,8 @@ In order to bring the repository to your local IDE you must clone the url, eithe
 "git clone 'https://github.com/YareBE/ModeLine'".
 Use "git fetch" or "git pull" (fetch + merge) to update your local repository with its latest version on github.
 
+For anything interface-related, take a look at [Streamlit's official documentation](https://docs.streamlit.io/)
+
 ## Pull and push:
 If you have the status of collaborator, you can directly modify the main branch by staging (git add 'file') the changes, commiting (git commit -m 'Message') and pushing the changes to github from the branch you want (for instance, git push origin 'branch')
 
