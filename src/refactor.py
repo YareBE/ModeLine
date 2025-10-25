@@ -249,7 +249,7 @@ class Interface():
                             return None
                 
                 # Save the actual state of the dataframe 
-                st.session_state["dataframe"] = df
+                st.session_state["features"] = df
                 st.rerun()
         
     def final_na(self):
@@ -264,7 +264,7 @@ class Interface():
         # Assign the df variable to the features dataframe
         df = st.session_state["features"]
         # If the are not null values, show the dataframe
-        if  df.isna().any().any():
+        if  not df.isna().any().any():
                 st.dataframe(df)
 
         if st.button("CONTINUE", type="primary"): 
@@ -279,9 +279,9 @@ class Interface():
         st.markdown('<a name="final_na"></a>', unsafe_allow_html=True)
 
         st.header("Training set Division")
-        st.subheader("The percentage (0-100) you choose for 'Training 
-                     percentage' will be passed, as it sounds, to the
-                     model. The rest will be used for testing it.")
+        st.subheader("The percentage (0-100) you choose for 'Training" 
+                     " percentage' will be passed, as it sounds, to the"
+                     " model. The rest will be used for testing it.")
         
         # Select the **train_size** using a slider
         train_size = st.slider("Training percentage", 0, 100, 80)
@@ -310,27 +310,23 @@ if __name__ == '__main__':
 
     # Introduce space between two lines
     st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
-    if "file" not in st.session_state:
+    if "upload_file" not in st.session_state:
         interface.upload_file()
     else:
-        if "confirmed" not in st.session_state:
-            interface.manage_dataset()
-            st.sidebar["
-        else:
-            if "selected_features" not in st.session_state:
-                interface.features_select()
-            else: 
-                if "selected_target" not in st.session_state:
-                    interface.target_select()
+        if "features_select" not in st.session_state:
+            interface.features_select()
+        else: 
+            if "target_select" not in st.session_state:
+                interface.target_select()
+            else:
+                if "detect_na" not in st.session_state:
+                    interface.detect_na()
                 else:
-                    if "nan" not in st.session_state:
-                        interface.detect_na()
+                    if "final_na" not in st.session_state:
+                        interface.final_na()
                     else:
-                        if "final_na" not in st.session_state:
-                            interface.final_na()
-                        else:
-                            if "divider" not in st.session_state:
-                                interface.set_divider()
+                        if "set_divider" not in st.session_state:
+                            interface.set_divider()
              
 
 
