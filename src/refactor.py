@@ -40,12 +40,11 @@ class Interface():
             st.error(f"Error while reading the file: {err}")
             return "error"
 
+
     @st.fragment
     def upload_file(self):
         # Create a session_state value to manage app flow
         st.session_state["upload_file"] = True
-        # Add an HTML anchor to redirect the function
-        st.markdown('<a name="upload_file"></a>', unsafe_allow_html=True)
         
         st.subheader(body="_You can only select 1 file_", anchor=False)
         # Guardamos el archivo guardado en el estado
@@ -80,6 +79,7 @@ class Interface():
         status.update(label="Data correctly processed", state="complete") 
         self.manage_dataset()
 
+
     def manage_dataset(self):
         # Dividimos la pantalla en tres columnas
         col1, col2, col3 = st.columns(spec=3, gap="large")
@@ -100,12 +100,11 @@ class Interface():
             st.markdown("<div style='margin: 30px 0;'></div>", unsafe_allow_html=True)
             self.data_display(st.session_state['dataframe'], "preview")
 
+
     @st.fragment
     def features_select(self):
         # Create a session_state value to manage app flow
         st.session_state["features_select"] = True
-        # Add an HTML anchor to redirect the function
-        st.markdown('<a name="features_select"></a>', unsafe_allow_html=True)
 
         # Guardamos el dataframe en una variable local
         df = st.session_state['dataframe']
@@ -141,12 +140,11 @@ class Interface():
             if st.button("Continue to the target selection"):
                 st.rerun()
 
+
     @st.fragment
     def target_select(self):
         # Create a session_state value to manage app flow
         st.session_state["target_select"] = True
-        # Add an HTML anchor to redirect the function
-        st.markdown('<a name="target_select"></a>', unsafe_allow_html=True)
         
         # Add the dataframe to a variable
         df = st.session_state["dataframe"]
@@ -181,12 +179,11 @@ class Interface():
             st.session_state["target"] = df[st.session_state["selected_target"]]
             st.rerun()
     
+
     @st.fragment
     def detect_na(self):
         # Create a session_state value to manage app flow
         st.session_state["detect_na"] = True
-        # Add an HTML anchor to redirect the function
-        st.markdown('<a name="detect_na"></a>', unsafe_allow_html=True) 
 
         # Show the dataframe
         df = st.session_state["features"]
@@ -251,12 +248,11 @@ class Interface():
                 # Save the actual state of the dataframe 
                 st.session_state["features"] = df
                 st.rerun()
-        
+       
+
     def final_na(self):
         # Create a session_state value to manage app flow
         st.session_state["final_na"] = True
-        # Add an HTML anchor to redirect the function
-        st.markdown('<a name="final_na"></a>', unsafe_allow_html=True)
         
         st.badge(label=f"Missing values filled succesfully",
                        icon=":material/thumbs_up_double:", 
@@ -275,8 +271,6 @@ class Interface():
     def set_divider(self):
         # Create a session_state value to manage app flow
         st.session_state["set_divider"] = True
-        # Add an HTML anchor to redirect the function
-        st.markdown('<a name="final_na"></a>', unsafe_allow_html=True)
 
         st.header("Training set Division")
         st.subheader("The percentage (0-100) you choose for 'Training" 
@@ -303,38 +297,44 @@ class Interface():
                            icon=":material/done_outline:", color="green")
   
 
+
 if __name__ == '__main__':
     interface = Interface()
-    st.header(body="**ModeLine**", divider="gray", 
-              anchor=False)
-
-    # Introduce space between two lines
+    
+    st.header(body="**ModeLine**", divider="gray", anchor=False)
     st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
-    if "upload_file" not in st.session_state:
-        interface.upload_file()
+    
+    # Define workflow steps
+    steps = [
+        ("upload_file", "📤 Upload Data", interface.upload_file),
+        ("features_select", "📊 Select Features", interface.features_select),
+        ("target_select", "🎯 Select Target", interface.target_select),
+        ("detect_na", "🧹 Detect Missing Values", interface.detect_na),
+        ("final_na", "🔧 Handle Missing Values", interface.final_na),
+        ("set_divider", "📐 Set Divider", interface.set_divider),
+    ]
+    
+    # === SIDEBAR: Show all steps ===
+    st.sidebar.title("Workflow Progress")
+    
+    current_step = None
+    for i, (key, label, _) in enumerate(steps):
+        if key in st.session_state:
+            st.sidebar.success(f"✅ {label}")
+        elif current_step is None:
+            current_step = i
+            st.sidebar.subheader(label, divider="grey")
+        else:
+            st.sidebar.write(f"⏸️ {label}")
+    
+    # === MAIN CONTENT: Show current step ===
+    if current_step is not None:
+        steps[current_step][2]()  # Call the function
     else:
-        if "features_select" not in st.session_state:
-            interface.features_select()
-        else: 
-            if "target_select" not in st.session_state:
-                interface.target_select()
-            else:
-                if "detect_na" not in st.session_state:
-                    interface.detect_na()
-                else:
-                    if "final_na" not in st.session_state:
-                        interface.final_na()
-                    else:
-                        if "set_divider" not in st.session_state:
-                            interface.set_divider()
+        st.success("🎉 All steps completed!")
+        st.balloons()
              
 
 
 
-    
-    
 
-
-    # QUÉ ES MEJOR UTILIZAR VARIABLES LOCALES (DATA_FILE) O APROVECHAR EL SESSION_STATE['DATA_FILE'] DE STREAMLIT
-
-    
