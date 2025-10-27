@@ -45,13 +45,6 @@ class Interface():
             st.session_state.na_method = None
             st.session_state.processed_data = None
 
-    def get_column_type(self, df, column):
-        """Determine if column is numeric or categorical"""
-        if pd.api.types.is_numeric_dtype(df[column]):
-            return "numeric"
-        else:
-            return "categorical"
-
     def style_dataframe(self, df):
         """Apply color styling to dataframe based on selected features and target"""
         if df is None:
@@ -95,23 +88,25 @@ class Interface():
         
         if uploaded_file is not None:
             # Load file if it's new or changed
-            if st.session_state.dataframe is None or uploaded_file != st.session_state.get("last_uploaded_file"):
+            if st.session_state.dataframe is None:
                 with st.spinner("Loading data..."):
                     df = self.load_file(uploaded_file)
-                    if type(df) == str:
-                        st.error(df)
+                    if type(df) != pd.DataFrame:
+                        st.sidebar.error(df)
+                        return None
                     elif len(df) == 0:
                         st.sidebar.error("ERROR: empty dataset")
                         return 
                     else:
                         st.session_state.dataframe = df
-                        st.session_state.last_uploaded_file = uploaded_file
                         self.reset_downstream_selections(1)
                         st.sidebar.success(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
         
         # Show reset button if data is loaded
         if st.session_state.dataframe is not None:
-            if st.sidebar.button("🔄 Upload Different File", use_container_width=True):
+            if st.sidebar.button("🔄 Upload Different File", use_container_width=True,
+                                 help = "To change the dataset, browse and drop a new one" \
+                                 " and then click this button"):
                 for key in list(st.session_state.keys()):
                     del st.session_state[key]
                 st.rerun()
@@ -121,18 +116,21 @@ class Interface():
             return
         
         df = st.session_state.dataframe
-        available_columns = list(df.columns)
+
+        #Exclude non-numerical variables
+        available_columns = df.select_dtypes(include=['number']).columns.tolist()
+
+        st.sidebar.divider()
         
-        st.sidebar.markdown("---")
-        
-        # === STEP 2: FEATURE SELECTION ===
+        # FEATURES SELECTION
         st.sidebar.subheader("2️⃣ Feature Selection")
         
         # Features multiselect
         selected_features = st.sidebar.multiselect(
-            "Select Training Features",
-            options=[col for col in available_columns if col != st.session_state.selected_target],
-            default=st.session_state.selected_features,
+            "Select Training Features (Numeric only!)",
+            options=[col for col in available_columns if \
+                     col != st.session_state.selected_target],
+            default = [],
             help="Choose one or more features for training",
             key="features_multiselect"
         )
@@ -142,24 +140,20 @@ class Interface():
             st.session_state.selected_features = selected_features
             self.reset_downstream_selections(2)
         
-        # Show feature types
-        if selected_features:
-            st.sidebar.caption("Selected features:")
-            for feat in selected_features:
-                col_type = self.get_column_type(df, feat)
-                icon = "🔢" if col_type == "numeric" else "📝"
-                st.sidebar.caption(f"{icon} {feat} ({col_type})")
+        st.sidebar.divider()
         
-        st.sidebar.markdown("---")
-        
-        # === STEP 3: TARGET SELECTION ===
+        # TARGET SELECTION
         st.sidebar.subheader("3️⃣ Target Selection")
         
         # Target selectbox
         target_options = [col for col in available_columns if col not in st.session_state.selected_features]
         
+        if len(target_options) == 0:
+            st.sidebar.error("ERROR: There is no variables left! Reject at least 1 feature")
+            return 
+
         selected_target = st.sidebar.selectbox(
-            "Select Target Variable",
+            "Select Target Variable (Numeric only!)",
             options=[""] + target_options,
             index=0 if st.session_state.selected_target is None else target_options.index(st.session_state.selected_target) + 1,
             help="Choose the variable you want to predict",
@@ -171,21 +165,12 @@ class Interface():
             st.session_state.selected_target = selected_target
             self.reset_downstream_selections(2)
         
-        # Show target type and warning
-        if selected_target:
-            target_type = self.get_column_type(df, selected_target)
-            icon = "🔢" if target_type == "numeric" else "📝"
-            st.sidebar.caption(f"{icon} {selected_target} ({target_type})")
-            
-            if target_type == "categorical":
-                st.sidebar.warning("⚠️ Categorical target detected. Consider classification algorithms.")
-        
         # Only proceed if both features and target are selected
         if not selected_features or not selected_target:
-            st.sidebar.info("👆 Please select at least one feature and one target variable")
+            st.sidebar.info("Please select at least one feature and one target variable")
             return
         
-        st.sidebar.markdown("---")
+        st.sidebar.divider()
         
         # === STEP 4: MISSING VALUES HANDLING ===
         st.sidebar.subheader("4️⃣ Handle Missing Values")
@@ -260,8 +245,8 @@ class Interface():
 
     def render_main_content(self):
         """Render the main content area"""
-        st.title("📊 ModeLine")
-        st.markdown("### Machine Learning Data Preparation Tool")
+        st.title("ModeLine")
+        st.header("Train and visualize linear regression models")
         st.markdown("---")
         
         # Show appropriate content based on state
@@ -270,8 +255,8 @@ class Interface():
             st.markdown("""
             ### Getting Started
             1. Upload your dataset (CSV, Excel, or SQLite)
-            2. Select features for training
-            3. Choose your target variable
+            2. Select features for training (Only numeric)
+            3. Choose your target variable (Numeric too)
             4. Handle missing values (if any)
             5. Configure train/test split
             6. Train your model!
@@ -279,11 +264,14 @@ class Interface():
             return
         
         df = st.session_state.dataframe
-        
+        cols_with_na = df.columns[df.isna().any()].tolist()
+
         # Display dataset info
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Rows", len(df))
         col2.metric("Total Columns", len(df.columns))
+        col3.caption("**Columns with NA values**")
+        col3.text((" | ").join(cols_with_na))
         
         if st.session_state.selected_features and st.session_state.selected_target:
             selected_data = df[st.session_state.selected_features + [st.session_state.selected_target]]
