@@ -3,6 +3,7 @@ from data_manager import DataUploader
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from model_trainer import LRTrainer
 
 class Interface():
     def __init__(self):
@@ -247,7 +248,7 @@ class Interface():
         """Render the main content area"""
         st.title("ModeLine")
         st.header("Train and visualize linear regression models")
-        st.markdown("---")
+        st.divider()
         
         # Show appropriate content based on state
         if st.session_state.dataframe is None:
@@ -273,12 +274,7 @@ class Interface():
         col3.caption("**Columns with NA values**")
         col3.text((" | ").join(cols_with_na))
         
-        if st.session_state.selected_features and st.session_state.selected_target:
-            selected_data = df[st.session_state.selected_features + [st.session_state.selected_target]]
-            na_count = selected_data.isna().sum().sum()
-            col3.metric("Missing Values", na_count)
-        
-        st.markdown("---")
+        st.divider()
         
         # Display styled dataframe
         if st.session_state.selected_features or st.session_state.selected_target:
@@ -295,10 +291,10 @@ class Interface():
             st.success("✅ Data is ready for training!")
             
             # Show final train button
-            st.markdown("---")
+            st.divider()
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                if st.button("🚀 TRAIN MODEL", type="primary", use_container_width=True):
+                if st.button("TRAIN MODEL", type="primary", use_container_width=True):
                     # Prepare data for training
                     X = st.session_state.processed_data[st.session_state.selected_features]
                     y = st.session_state.processed_data[st.session_state.selected_target]
@@ -306,8 +302,9 @@ class Interface():
                     X_train, X_test, y_train, y_test = train_test_split(
                         X, y,
                         train_size=st.session_state.train_size / 100,
-                        random_state=42
+                        random_state = 18
                     )
+                    model = LRTrainer(X, y, st.session_state["train_size"])
                     
                     # Store split data
                     st.session_state.X_train = X_train
