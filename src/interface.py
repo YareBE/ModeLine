@@ -3,7 +3,11 @@ from data_manager import DataUploader
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from model_trainer import LRTrainer
+import plotly.express as px
+import plotly.graph_objects as go
 
 class Interface():
     def __init__(self):
@@ -23,8 +27,12 @@ class Interface():
             st.session_state.train_size = 80
         if "processed_data" not in st.session_state:
             st.session_state.processed_data = None
+        if "model" not in st.session_state:
+            st.session_state.model = None
+        if "model_trained" not in st.session_state:
+            st.session_state.model_trained = False
 
-    @staticmethod #To load more efficiently
+    @staticmethod
     @st.cache_data
     def load_file(data_file):
         """Load and process uploaded file"""
@@ -37,14 +45,18 @@ class Interface():
 
     def reset_downstream_selections(self, level):
         """Reset selections that depend on upstream choices"""
-        if level <= 1:  # File changed
+        if level <= 1:
             st.session_state.selected_features = []
             st.session_state.selected_target = None
             st.session_state.na_method = None
             st.session_state.processed_data = None
-        elif level <= 2:  # Features/target changed
+            st.session_state.model = None
+            st.session_state.model_trained = False
+        elif level <= 2:
             st.session_state.na_method = None
             st.session_state.processed_data = None
+            st.session_state.model = None
+            st.session_state.model_trained = False
 
     def style_dataframe(self, df):
         """Apply color styling to dataframe based on selected features and target"""
@@ -53,9 +65,9 @@ class Interface():
         
         def highlight_columns(col):
             if col.name in st.session_state.selected_features:
-                return ['background-color: #e3f2fd'] * len(col)  # Light blue
+                return ['background-color: #e3f2fd'] * len(col)
             elif col.name == st.session_state.selected_target:
-                return ['background-color: #ffebee'] * len(col)  # Light red
+                return ['background-color: #ffebee'] * len(col)
             else:
                 return [''] * len(col)
         
@@ -74,6 +86,79 @@ class Interface():
                 return df.fillna(constant_value)
         return df
 
+    def train_model(self, X_train, y_train):
+        """Train the linear regression model"""
+        model = linear_model.LinearRegression()
+        model.fit(X_train, y_train)
+        return model
+
+    def evaluate_model(self, model, X_train, y_train, X_test, y_test):
+        """Evaluate model performance"""
+        # Predictions
+        y_train_pred = model.predict(X_train)
+        y_test_pred = model.predict(X_test)
+        
+        # Metrics
+        metrics = {
+            'train': {
+                'r2': r2_score(y_train, y_train_pred),
+                'mse': mean_squared_error(y_train, y_train_pred),
+                'rmse': np.sqrt(mean_squared_error(y_train, y_train_pred)),
+                'mae': mean_absolute_error(y_train, y_train_pred)
+            },
+            'test': {
+                'r2': r2_score(y_test, y_test_pred),
+                'mse': mean_squared_error(y_test, y_test_pred),
+                'rmse': np.sqrt(mean_squared_error(y_test, y_test_pred)),
+                'mae': mean_absolute_error(y_test, y_test_pred)
+            }
+        }
+        
+        return metrics, y_train_pred, y_test_pred
+
+    def plot_predictions(self, y_train, y_train_pred, y_test, y_test_pred):
+        """Create visualization of predictions vs actual values"""
+        # Combine data
+        train_df = pd.DataFrame({
+            'Actual': y_train,
+            'Predicted': y_train_pred,
+            'Set': 'Train'
+        })
+        
+        test_df = pd.DataFrame({
+            'Actual': y_test,
+            'Predicted': y_test_pred,
+            'Set': 'Test'
+        })
+        
+        combined_df = pd.concat([train_df, test_df])
+        
+        # Create scatter plot
+        fig = px.scatter(
+            combined_df,
+            x='Actual',
+            y='Predicted',
+            color='Set',
+            title='Predictions vs Actual Values',
+            labels={'Actual': 'Actual Values', 'Predicted': 'Predicted Values'},
+            color_discrete_map={'Train': '#1f77b4', 'Test': '#ff7f0e'}
+        )
+        
+        # Add perfect prediction line
+        min_val = min(combined_df['Actual'].min(), combined_df['Predicted'].min())
+        max_val = max(combined_df['Actual'].max(), combined_df['Predicted'].max())
+        fig.add_trace(
+            go.Scatter(
+                x=[min_val, max_val],
+                y=[min_val, max_val],
+                mode='lines',
+                name='Perfect Prediction',
+                line=dict(color='red', dash='dash')
+            )
+        )
+        
+        return fig
+
     def render_sidebar(self):
         """Render the complete sidebar with all controls"""
         st.sidebar.title("Workflow")
@@ -83,12 +168,11 @@ class Interface():
         st.sidebar.subheader("1️⃣ Data Upload")
         uploaded_file = st.sidebar.file_uploader(
             "Upload your dataset",
-            type = ["csv", "xls", "xlsx", "db", "sqlite"],
-            help = "Supported formats: CSV, Excel, SQLite"
+            type=["csv", "xls", "xlsx", "db", "sqlite"],
+            help="Supported formats: CSV, Excel, SQLite"
         )
         
         if uploaded_file is not None:
-            # Load file if it's new or changed
             if st.session_state.dataframe is None:
                 with st.spinner("Loading data..."):
                     df = self.load_file(uploaded_file)
@@ -103,40 +187,31 @@ class Interface():
                         self.reset_downstream_selections(1)
                         st.sidebar.success(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
         
-        # Show reset button if data is loaded
         if st.session_state.dataframe is not None:
             if st.sidebar.button("🔄 Upload Different File", use_container_width=True,
-                                 help = "To change the dataset, browse and drop a new one" \
-                                 " and then click this button"):
+                                 help="To change the dataset, browse and drop a new one and then click this button"):
                 for key in list(st.session_state.keys()):
                     del st.session_state[key]
                 st.rerun()
         
-        # Only show next steps if data is loaded
         if st.session_state.dataframe is None:
             return
         
         df = st.session_state.dataframe
-
-        #Exclude non-numerical variables
         available_columns = df.select_dtypes(include=['number']).columns.tolist()
 
         st.sidebar.divider()
         
         # FEATURES SELECTION
         st.sidebar.subheader("2️⃣ Feature Selection")
-        
-        # Features multiselect
         selected_features = st.sidebar.multiselect(
             "Select Training Features (Numeric only!)",
-            options=[col for col in available_columns if \
-                     col != st.session_state.selected_target],
-            default = [],
+            options=[col for col in available_columns if col != st.session_state.selected_target],
+            default=[],
             help="Choose one or more features for training",
             key="features_multiselect"
         )
         
-        # Update session state and reset downstream if changed
         if selected_features != st.session_state.selected_features:
             st.session_state.selected_features = selected_features
             self.reset_downstream_selections(2)
@@ -145,8 +220,6 @@ class Interface():
         
         # TARGET SELECTION
         st.sidebar.subheader("3️⃣ Target Selection")
-        
-        # Target selectbox
         target_options = [col for col in available_columns if col not in st.session_state.selected_features]
         
         if len(target_options) == 0:
@@ -161,22 +234,18 @@ class Interface():
             key="target_selectbox"
         )
         
-        # Update session state
         if selected_target and selected_target != st.session_state.selected_target:
             st.session_state.selected_target = selected_target
             self.reset_downstream_selections(2)
         
-        # Only proceed if both features and target are selected
         if not selected_features or not selected_target:
             st.sidebar.info("Please select at least one feature and one target variable")
             return
         
         st.sidebar.divider()
         
-        # === STEP 4: MISSING VALUES HANDLING ===
+        # MISSING VALUES HANDLING
         st.sidebar.subheader("4️⃣ Handle Missing Values")
-        
-        # Get selected data
         selected_data = df[selected_features + [selected_target]]
         na_count = selected_data.isna().sum().sum()
         
@@ -196,7 +265,6 @@ class Interface():
                     help="Value to replace missing data"
                 )
             
-            # Update button
             if st.sidebar.button("Apply NA Handling", type="primary", use_container_width=True):
                 if na_method != "Select method...":
                     if na_method == "Constant" and not constant_value:
@@ -216,15 +284,13 @@ class Interface():
             st.session_state.processed_data = selected_data
             st.session_state.na_method = "None needed"
         
-        # Only show train/test split if data is processed
         if st.session_state.processed_data is None:
             return
         
         st.sidebar.markdown("---")
         
-        # === STEP 5: TRAIN/TEST SPLIT ===
+        # TRAIN/TEST SPLIT
         st.sidebar.subheader("5️⃣ Train/Test Split")
-        
         train_size = st.sidebar.slider(
             "Training Set Percentage",
             min_value=50,
@@ -235,7 +301,6 @@ class Interface():
         )
         st.session_state.train_size = train_size
         
-        # Show split info
         total_rows = len(st.session_state.processed_data)
         train_rows = int(total_rows * train_size / 100)
         test_rows = total_rows - train_rows
@@ -250,7 +315,6 @@ class Interface():
         st.header("Train and visualize linear regression models")
         st.divider()
         
-        # Show appropriate content based on state
         if st.session_state.dataframe is None:
             st.info("👈 Please upload a dataset using the sidebar to get started")
             st.markdown("""
@@ -267,12 +331,11 @@ class Interface():
         df = st.session_state.dataframe
         cols_with_na = df.columns[df.isna().any()].tolist()
 
-        # Display dataset info
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Rows", len(df))
         col2.metric("Total Columns", len(df.columns))
         col3.caption("**Columns with NA values**")
-        col3.text((" | ").join(cols_with_na))
+        col3.text((" | ").join(cols_with_na) if cols_with_na else "None")
         
         st.divider()
         
@@ -286,43 +349,77 @@ class Interface():
             st.markdown("#### Dataset Preview")
             st.dataframe(df, use_container_width=True, height=400)
         
-        # Show processed data status
+        # Show model training section
         if st.session_state.processed_data is not None:
             st.success("✅ Data is ready for training!")
             
-            # Show final train button
             st.divider()
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                if st.button("TRAIN MODEL", type="primary", use_container_width=True):
-                    # Prepare data for training
-                    X = st.session_state.processed_data[st.session_state.selected_features]
-                    y = st.session_state.processed_data[st.session_state.selected_target]
-                    
-                    X_train, X_test, y_train, y_test = train_test_split(
-                        X, y,
-                        train_size=st.session_state.train_size / 100,
-                        random_state = 18
-                    )
-                    model = LRTrainer(X, y, st.session_state["train_size"])
-                    
-                    # Store split data
-                    st.session_state.X_train = X_train
-                    st.session_state.X_test = X_test
-                    st.session_state.y_train = y_train
-                    st.session_state.y_test = y_test
-                    
-                    st.balloons()
-                    st.success(f"""
-                    🎉 Data split successfully!
-                    - Training set: {len(X_train)} samples
-                    - Test set: {len(X_test)} samples
-                    - Features: {len(st.session_state.selected_features)}
-                    - Target: {st.session_state.selected_target}
-                    """)
-                    
-                    # Here you would typically proceed to model training
-                    st.info("Ready to proceed with model training! (Next step would be model selection and training)")
+                if st.button("🚀 TRAIN MODEL", type="primary", use_container_width=True):
+                    with st.spinner("Training model..."):
+                        # Prepare data
+                        X = st.session_state.processed_data[st.session_state.selected_features]
+                        y = st.session_state.processed_data[st.session_state.selected_target]
+                        
+                        X_train, X_test, y_train, y_test = train_test_split(
+                            X, y,
+                            train_size=st.session_state.train_size / 100,
+                            random_state=18
+                        )
+                        
+                        # Train model
+                        model = self.train_model(X_train, y_train)
+                        
+                        # Evaluate
+                        metrics, y_train_pred, y_test_pred = self.evaluate_model(
+                            model, X_train, y_train, X_test, y_test
+                        )
+                        
+                        # Store in session state
+                        st.session_state.model = model
+                        st.session_state.X_train = X_train
+                        st.session_state.X_test = X_test
+                        st.session_state.y_train = y_train
+                        st.session_state.y_test = y_test
+                        st.session_state.y_train_pred = y_train_pred
+                        st.session_state.y_test_pred = y_test_pred
+                        st.session_state.metrics = metrics
+                        st.session_state.model_trained = True
+                        
+                    st.rerun()
+        
+        # Display model results
+        if st.session_state.model_trained:
+            st.divider()
+            st.header("📊 Model Results")
+            
+            # Display metrics
+            st.subheader("Performance Metrics")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("####  Training Set")
+                metrics_train = st.session_state.metrics['train']
+                st.metric("R² Score", f"{metrics_train['r2']:.4f}")
+                st.metric("MSE", f"{metrics_train['mse']:.4f}")
+            
+            with col2:
+                st.markdown("####  Test Set")
+                metrics_test = st.session_state.metrics['test']
+                st.metric("R² Score", f"{metrics_test['r2']:.4f}")
+                st.metric("MSE", f"{metrics_test['mse']:.4f}")
+            
+            # Predictions plot
+            st.divider()
+            st.subheader("Predictions Visualization")
+            fig = self.plot_predictions(
+                st.session_state.y_train,
+                st.session_state.y_train_pred,
+                st.session_state.y_test,
+                st.session_state.y_test_pred
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
     def run(self):
         """Main application runner"""
@@ -332,7 +429,6 @@ class Interface():
             initial_sidebar_state="expanded"
         )
         
-        # Render sidebar and main content
         self.render_sidebar()
         self.render_main_content()
 
