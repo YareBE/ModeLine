@@ -18,13 +18,10 @@ class Interface():
             "dataframe": None,
             "selected_features": [],
             "selected_target": [],
-            "na_method": None,
             "train_size": 80,
             "processed_data": None,
             "model": None,
             "model_trained": False,
-            "show_full_data": False,
-            "data_rows_to_show": [0, 100],
             "file_uploader_key": 0
         }
         
@@ -75,7 +72,7 @@ class Interface():
     def reset_downstream_selections(self, level):
         """Reset selections that depend on upstream choices"""
         if level <= 1:
-            keys_to_reset = ["selected_features", "selected_target", "na_method", 
+            keys_to_reset = ["selected_features", "selected_target",
                            "processed_data", "model", "model_trained"]
             for key in keys_to_reset:
                 if key == "selected_features" or key == "selected_target":
@@ -83,7 +80,7 @@ class Interface():
                 else:
                     st.session_state[key] = None if key != "model_trained" else False
         elif level <= 2:
-            keys_to_reset = ["na_method", "processed_data", "model", "model_trained"]
+            keys_to_reset = ["processed_data", "model", "model_trained"]
             for key in keys_to_reset:
                 st.session_state[key] = None if key != "model_trained" else False
 
@@ -229,8 +226,7 @@ class Interface():
                     
                     na_method = st.selectbox(
                         "Filling method",
-                        options=["Select method...", "Delete rows", "Mean", "Median", "Constant"],
-                        key="na_method_select"
+                        options=["Select method...", "Delete rows", "Mean", "Median", "Constant"]
                     )
                     
                     constant_value = None
@@ -245,14 +241,13 @@ class Interface():
                         else:
                             processed = self.apply_na_handling(selected_data, na_method, constant_value)
                             st.session_state.processed_data = processed
-                            st.session_state.na_method = na_method
+                            st.session_state.dataframe[processed.columns] = processed 
                             st.success("✅ NAs handled!")
                             st.rerun()
                 else:
                     st.success("✅ No missing values")
                     if st.session_state.processed_data is None:
                         st.session_state.processed_data = selected_data
-                        st.session_state.na_method = "None needed"
                 
                 if st.session_state.processed_data is None:
                     return
@@ -289,23 +284,28 @@ class Interface():
         # Add controls for data display
         col1, col2 = st.columns([3, 1])
         with col1:
-            available_rows = [[i, i + 100] for i in range(0, len(df), 100)]
+            available_rows = [[i, i + 100 if i <= len(df) else len(df)] \
+                            for i in range(0, len(df), 100)]
             rows_displayed = st.selectbox("Choose the range of rows to be" \
-            " displayed", options = available_rows, )
+            " displayed", options = available_rows, index = 0 if 
+            "rows_displayed" not in st.session_state else\
+                    st.session_state.rows_displayed[0]//100)
+
+            st.session_state.rows_displayed = rows_displayed
         
         # Display dataframe with limited rows for performance
-        if st.session_state.selected_features or st.session_state.selected_target:
-            st.caption("🔵 Blue = Features | 🔴 Red = Target")
-            
-            # Only style and show limited rows
-            display_df = df[rows_displayed[0]:rows_displayed[1]]
-            styled_df = self.style_dataframe(
-                _df = display_df,
-                features = st.session_state.selected_features,
-                target = st.session_state.selected_target,
-                axis = 0
-            )
-            st.dataframe(styled_df, use_container_width=True, height=400)
+        st.caption("🔵 Blue = Features | 🔴 Red = Target")
+        
+        # Only style and show limited rows
+        display_df = df[st.session_state.rows_displayed[0]:\
+                        st.session_state.rows_displayed[1]]
+        styled_df = self.style_dataframe(
+            _df = display_df,
+            features = st.session_state.selected_features,
+            target = st.session_state.selected_target,
+            axis = 0
+        )
+        st.dataframe(styled_df, use_container_width=True, height=400)
 
     def visualize_results(self):
         """Display model results"""
