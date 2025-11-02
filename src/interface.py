@@ -23,6 +23,7 @@ class Interface():
             "train_size": 100,
             "model_trained": False,
             "file_uploader_key": 0,
+            "description": None,
             "na_method" : None
         }
         
@@ -77,7 +78,7 @@ class Interface():
                 else:
                     st.session_state[key] = None if key != "model_trained" else False
         elif level <= 2:
-            keys_to_reset = ["processed_data", "model", "model_trained", "na_method"]
+            keys_to_reset = ["processed_data", "description", "model", "model_trained", "na_method"]
             for key in keys_to_reset:
                 st.session_state[key] = None if key != "model_trained" else False
 
@@ -350,7 +351,6 @@ class Interface():
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            st.markdown('### Model formula')
             formula = st.session_state.lr_trainer.get_formula()
             st.info(formula)
         else:
@@ -394,7 +394,7 @@ class Interface():
                         X_train, X_test, y_train, y_test = lr_trainer.get_splitted_subsets()
                         model = lr_trainer.train_model()
                         metrics, y_train_pred, y_test_pred = lr_trainer.test_model()
-
+                        
                         
                         # Store results
                         st.session_state.model = model
@@ -409,6 +409,26 @@ class Interface():
                         st.session_state.model_trained = True
                         
                         st.balloons()
+            
+            if st.session_state.model_trained:
+                st.divider()
+                st.subheader("Model description")
+                if st.session_state.description is None:
+                    model_description = st.text_input("Add an outline to be"
+                        " stored with your model",
+                        placeholder = 'Example: "Model for predicting body weight '
+                        ' based on height and age"')
+                    if st.button("Save selection", type = "primary"):
+                        st.session_state.description = model_description
+                        st.rerun()
+                    st.warning("Adding a description is optional but recommended\n"
+                    " in order to avoid future confusions")
+                else:
+                    if st.button("Change description", type = "primary"):
+                        st.session_state.description = None
+                        st.rerun()
+                    actual = "Actual: " + st.session_state.description
+                    st.caption(actual)
             
             # Show results if model is trained
             if st.session_state.model_trained:
