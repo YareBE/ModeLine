@@ -18,9 +18,9 @@ class Interface():
             "dataframe": None,
             "selected_features": [],
             "selected_target": [],
-            "train_size": 80,
             "processed_data": None,
             "model": None,
+            "train_size": 100,
             "model_trained": False,
             "file_uploader_key": 0,
             "na_method" : None
@@ -259,21 +259,19 @@ class Interface():
                 st.divider()
                 
                 # TRAIN/TEST SPLIT
+                train_size = 100 if len(df) < 10 else 80
                 if len(df) >= 10:
                     st.subheader("5️⃣ Split")
                     train_size = st.slider(
                         "Training %",
                         min_value=5,
                         max_value=95,
-                        value=st.session_state.train_size,
+                        value=80,
                         step=5,
                         help="Train/test split percentage",
                         key="train_slider"
                     )
-                else:
-                    train_size = 99
-
-                st.session_state.train_size = train_size
+                    st.session_state.train_size = train_size
                 
                 total_rows = len(st.session_state.processed_data)
                 train_rows = int(total_rows * train_size / 100)
@@ -320,39 +318,43 @@ class Interface():
 
     def visualize_results(self):
         """Display model results"""
-        if "lr_trainer" not in st.session_state:
-            return
+        if "lr_trainer" in st.session_state and st.session_state.model_trained:
             
-        st.divider()
-        st.header("Model Results")
-        
-        # Display metrics
-        st.subheader("Performance Metrics")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### Training Set")
-            metrics_train = st.session_state.metrics['train']
-            st.metric("R² Score", f"{metrics_train['r2']:.4f}")
-            st.metric("MSE", f"{metrics_train['mse']:.4f}")
-
-        if st.session_state.X_test is not None:
+            st.divider()
+            st.header("Model Results")
+            
+            # Display metrics
+            st.subheader("Performance Metrics")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### Training Set")
+                metrics_train = st.session_state.metrics['train']
+                st.metric("R² Score", f"{metrics_train['r2']:.4f}")
+                st.metric("MSE", f"{metrics_train['mse']:.4f}")
             with col2:
-                st.markdown("#### Test Set")
-                metrics_test = st.session_state.metrics['test']
-                st.metric("R² Score", f"{metrics_test['r2']:.4f}")
-                st.metric("MSE", f"{metrics_test['mse']:.4f}")
-            
-        # Predictions plot
-        st.divider()
-        st.subheader("Predictions Visualization")
-        fig = st.session_state.lr_trainer.plot_results(
-        )
-        st.plotly_chart(fig, use_container_width=True)
+                if st.session_state.X_test is not None:
+                        st.markdown("#### Test Set")
+                        metrics_test = st.session_state.metrics['test']
+                        st.metric("R² Score", f"{metrics_test['r2']:.4f}")
+                        st.metric("MSE", f"{metrics_test['mse']:.4f}")
+                else:
+                    st.subheader("\tIMPORTANT")
+                    st.warning("Remember, the performance is counting" \
+                    " only the training set,\n so the results are not realistic")
+                
+            # Predictions plot
+            st.divider()
+            st.subheader("Predictions Visualization")
+            fig = st.session_state.lr_trainer.plot_results(
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-        st.markdown('### Model formula')
-        formula = st.session_state.lr_trainer.get_formula()
-        st.info(formula)
+            st.markdown('### Model formula')
+            formula = st.session_state.lr_trainer.get_formula()
+            st.info(formula)
+        else:
+            return
 
     def render_main_content(self):
         """Render the main content area"""

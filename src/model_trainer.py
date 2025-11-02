@@ -32,7 +32,7 @@ class LRTrainer:
         if len(X) == 0:
             raise ValueError("X and y cannot be empty")
         
-        assert (0 < train_size < 1), "The training size must be between 0 and 1"
+        assert (0 <= train_size <= 1), "The training size must be between 0 and 1"
         
         # Convertir a DataFrame si es necesario
         if not isinstance(X, pd.DataFrame):
@@ -230,7 +230,6 @@ class LRTrainer:
             else:
                 # Convertir a arrays 1D
                 y_train_actual = self.y_train.values.ravel()
-                y_test_actual = self.y_test.values.ravel()
                     
                 # Puntos train
                 fig.add_trace(go.Scatter(
@@ -240,6 +239,7 @@ class LRTrainer:
                 ))
 
                 if self._test_available:
+                    y_test_actual = self.y_test.values.ravel()
                     fig.add_trace(go.Scatter(
                             x=y_test_actual, y=self.y_test_pred,
                             mode='markers', name='Test',
