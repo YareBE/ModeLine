@@ -22,16 +22,15 @@ class Interface():
             "processed_data": None,
             "model": None,
             "model_trained": False,
-            "file_uploader_key": 0
+            "file_uploader_key": 0,
+            "na_method" : None
         }
         
         for key, value in defaults.items():
             if key not in st.session_state:
                 st.session_state[key] = value
 
-    @staticmethod
-    @st.cache_data(show_spinner=False)
-    def load_file(data_file):
+    def load_file(self, data_file):
         """Load and process uploaded file - cached to avoid reloading"""
         try:
             selected_file = DataUploader(data_file)
@@ -53,9 +52,7 @@ class Interface():
         cols_with_na = df.columns[df.isna().any()].tolist()
         return cols_with_na
 
-    @staticmethod
-    @st.cache_data(show_spinner=False)
-    def apply_na_handling(_df, method, constant_value=None):
+    def apply_na_handling(self, _df, method, constant_value=None):
         """Cache NA handling operations"""
         df = _df.copy()
         if method == "Delete rows":
@@ -80,7 +77,7 @@ class Interface():
                 else:
                     st.session_state[key] = None if key != "model_trained" else False
         elif level <= 2:
-            keys_to_reset = ["processed_data", "model", "model_trained"]
+            keys_to_reset = ["processed_data", "model", "model_trained", "na_method"]
             for key in keys_to_reset:
                 st.session_state[key] = None if key != "model_trained" else False
 
@@ -172,6 +169,9 @@ class Interface():
                 if cols_with_na:
                     st.caption(f"**NA Columns:** {', '.join(cols_with_na[:3])}{' ...' if len(cols_with_na) > 3 else ''}")
 
+                if len(df) < 10:
+                    st.warning("WARNING: As the dataset is too small, all of" \
+                    " it will be used to train, resulting on an empty testing dataframe.")
                 st.divider()
 
                 # FEATURES SELECTION
@@ -221,14 +221,19 @@ class Interface():
                 selected_data = df[selected_features + selected_target]
                 na_count = selected_data.isna().sum().sum()
                 
-                if na_count > 0:
+                #The following conditional is to avoid showing the warning after
+                #dropping NAs
+                if (na_count > 0 and st.session_state.na_method != "Delete rows"\
+                    and st.session_state.processed_data is None)\
+                    or (na_count > 0 and st.session_state.processed_data is None):
+
                     st.warning(f"⚠️ {na_count} missing values")
                     
                     na_method = st.selectbox(
                         "Filling method",
                         options=["Select method...", "Delete rows", "Mean", "Median", "Constant"]
                     )
-                    
+                    st.session_state.na_method = na_method
                     constant_value = None
                     if na_method == "Constant":
                         constant_value = st.text_input("Constant value", key="const_input")
@@ -241,7 +246,6 @@ class Interface():
                         else:
                             processed = self.apply_na_handling(selected_data, na_method, constant_value)
                             st.session_state.processed_data = processed
-                            st.session_state.dataframe[processed.columns] = processed 
                             st.success("✅ NAs handled!")
                             st.rerun()
                 else:
@@ -255,16 +259,20 @@ class Interface():
                 st.divider()
                 
                 # TRAIN/TEST SPLIT
-                st.subheader("5️⃣ Split")
-                train_size = st.slider(
-                    "Training %",
-                    min_value=5,
-                    max_value=95,
-                    value=st.session_state.train_size,
-                    step=5,
-                    help="Train/test split percentage",
-                    key="train_slider"
-                )
+                if len(df) >= 10:
+                    st.subheader("5️⃣ Split")
+                    train_size = st.slider(
+                        "Training %",
+                        min_value=5,
+                        max_value=95,
+                        value=st.session_state.train_size,
+                        step=5,
+                        help="Train/test split percentage",
+                        key="train_slider"
+                    )
+                else:
+                    train_size = 99
+
                 st.session_state.train_size = train_size
                 
                 total_rows = len(st.session_state.processed_data)
@@ -277,14 +285,17 @@ class Interface():
 
     def display_dataframe(self):
         """Fragment for dataframe display to avoid full rerun on checkbox toggle"""
-        df = st.session_state.dataframe
+        df = st.session_state.dataframe.copy()
+        if st.session_state.processed_data is not None:
+            df[st.session_state.selected_features +\
+                st.session_state.selected_target] = st.session_state.processed_data
         
         st.markdown("#### Dataset Preview")
         
         # Add controls for data display
         col1, col2 = st.columns([3, 1])
         with col1:
-            available_rows = [[i, i + 100 if i <= len(df) else len(df)] \
+            available_rows = [[i, i + 100 if i+100 <= len(df) else len(df)] \
                             for i in range(0, len(df), 100)]
             rows_displayed = st.selectbox("Choose the range of rows to be" \
             " displayed", options = available_rows, index = 0 if 
@@ -324,21 +335,24 @@ class Interface():
             metrics_train = st.session_state.metrics['train']
             st.metric("R² Score", f"{metrics_train['r2']:.4f}")
             st.metric("MSE", f"{metrics_train['mse']:.4f}")
-        
-        with col2:
-            st.markdown("#### Test Set")
-            metrics_test = st.session_state.metrics['test']
-            st.metric("R² Score", f"{metrics_test['r2']:.4f}")
-            st.metric("MSE", f"{metrics_test['mse']:.4f}")
-        
+
+        if st.session_state.X_test is not None:
+            with col2:
+                st.markdown("#### Test Set")
+                metrics_test = st.session_state.metrics['test']
+                st.metric("R² Score", f"{metrics_test['r2']:.4f}")
+                st.metric("MSE", f"{metrics_test['mse']:.4f}")
+            
         # Predictions plot
         st.divider()
         st.subheader("Predictions Visualization")
         fig = st.session_state.lr_trainer.plot_results(
-            st.session_state.y_train_pred,
-            st.session_state.y_test_pred
         )
         st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown('### Model formula')
+        formula = st.session_state.lr_trainer.get_formula()
+        st.info(formula)
 
     def render_main_content(self):
         """Render the main content area"""
@@ -355,11 +369,10 @@ class Interface():
             3. Choose target variable (numeric)
             4. Handle missing values if any
             5. Configure train/test split
-            6. Train your model!
+            6. Train your model and visualize it!
             """)
             return
-        
-        # Display dataframe using fragment
+
         self.display_dataframe()
         
         # MODEL TRAINING SECTION
@@ -374,12 +387,12 @@ class Interface():
                         # Prepare data
                         X = st.session_state.processed_data[st.session_state.selected_features]
                         y = st.session_state.processed_data[st.session_state.selected_target]
-                        
                         # Train model
-                        lr_trainer = LRTrainer(X, y, st.session_state.train_size)
+                        lr_trainer = LRTrainer(X, y, float(st.session_state.train_size/100))
+                        X_train, X_test, y_train, y_test = lr_trainer.get_splitted_subsets()
                         model = lr_trainer.train_model()
-                        metrics, y_train_pred, y_test_pred = lr_trainer.evaluate_model()
-                        X_train, y_train, X_test, y_test = lr_trainer.get_division()
+                        metrics, y_train_pred, y_test_pred = lr_trainer.test_model()
+
                         
                         # Store results
                         st.session_state.model = model
