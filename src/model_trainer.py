@@ -110,9 +110,7 @@ class LRTrainer:
             metrics = {
                 'train': {
                     'r2': r2_score(self.y_train, y_train_pred),
-                    'mse': mean_squared_error(self.y_train, y_train_pred),
-                    'rmse': np.sqrt(mean_squared_error(self.y_train, y_train_pred)),
-                    'mae': mean_absolute_error(self.y_train, y_train_pred)
+                    'mse': mean_squared_error(self.y_train, y_train_pred)
                 }     
             }
             self.y_train_pred = y_train_pred.ravel()
@@ -121,9 +119,7 @@ class LRTrainer:
                 y_test_pred = self.model.predict(self.X_test)
                 metrics['test'] = {
                         'r2': r2_score(self.y_test, y_test_pred),
-                        'mse': mean_squared_error(self.y_test, y_test_pred),
-                        'rmse': np.sqrt(mean_squared_error(self.y_test, y_test_pred)),
-                        'mae': mean_absolute_error(self.y_test, y_test_pred)
+                        'mse': mean_squared_error(self.y_test, y_test_pred)
                     }
                 self.y_test_pred = y_test_pred.ravel()
 
