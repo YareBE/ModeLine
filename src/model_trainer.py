@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 class LRTrainer:
     
-    def __init__(self, X, y, train_size):
+    def __init__(self, X, y, train_size, split_seed):
         """
         Initialize the Linear Regression Trainer
         

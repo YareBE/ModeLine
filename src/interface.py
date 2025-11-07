@@ -24,7 +24,8 @@ class Interface():
             "model_trained": False,
             "file_uploader_key": 0,
             "description": None,
-            "na_method" : None
+            "na_method" : None,
+            "split_seed" : 1
         }
         
         for key, value in defaults.items():
@@ -262,17 +263,26 @@ class Interface():
                 # TRAIN/TEST SPLIT
                 train_size = 100 if len(df) < 10 else 80
                 if len(df) >= 10:
-                    st.subheader("5️⃣ Split")
-                    train_size = st.slider(
-                        "Training %",
-                        min_value=5,
-                        max_value=95,
-                        value=80,
-                        step=5,
-                        help="Train/test split percentage",
-                        key="train_slider"
-                    )
-                    st.session_state.train_size = train_size
+                    col1, col2 = st.columns([1, 4])
+                    with col1:
+                        split_seed = st.number_input("Seed",
+                                    help = "This seed will be used for a " \
+                                    "random but repeteable split-generation",
+                                    value = st.session_state.split_seed
+                                )
+                        st.session_state.split_seed = split_seed
+                    with col2:
+                        st.subheader("5️⃣ Split")
+                        train_size = st.slider(
+                            "Training %",
+                            min_value=5,
+                            max_value=95,
+                            value=80,
+                            step=1,
+                            help="Train/test split percentage",
+                            key="train_slider"
+                        )
+                        st.session_state.train_size = train_size
                 
                 total_rows = len(st.session_state.processed_data)
                 train_rows = int(total_rows * train_size / 100)
@@ -323,6 +333,8 @@ class Interface():
             
             st.divider()
             st.header("Model Results")
+            formula = st.session_state.lr_trainer.get_formula()
+            st.info(formula)
             
             # Display metrics
             st.subheader("Performance Metrics")
@@ -351,8 +363,7 @@ class Interface():
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            formula = st.session_state.lr_trainer.get_formula()
-            st.info(formula)
+            
         else:
             return
 
