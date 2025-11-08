@@ -23,7 +23,6 @@ class Interface():
             "train_size": 100,
             "model_trained": False,
             "file_uploader_key": 0,
-            "description": None,
             "na_method" : None,
             "split_seed" : 1
         }
@@ -362,10 +361,15 @@ class Interface():
             fig = st.session_state.lr_trainer.plot_results(
             )
             st.plotly_chart(fig, use_container_width=True)
+            st.divider()
 
-            
-        else:
-            return
+            st.subheader("Liked the performance? Save your model")
+            st.text_input("Add an outline to be"
+                " stored with your model",
+                placeholder = 'Example: "Model for predicting body weight '
+                ' based on height and age"', key = "model_description")
+            st.warning("Adding a description is optional but recommended\n"
+            " in order to avoid future confusions")
 
     def render_main_content(self):
         """Render the main content area"""
@@ -401,7 +405,7 @@ class Interface():
                         X = st.session_state.processed_data[st.session_state.selected_features]
                         y = st.session_state.processed_data[st.session_state.selected_target]
                         # Train model
-                        lr_trainer = LRTrainer(X, y, float(st.session_state.train_size/100))
+                        lr_trainer = LRTrainer(X, y, float(st.session_state.train_size/100), st.session_state.split_seed)
                         X_train, X_test, y_train, y_test = lr_trainer.get_splitted_subsets()
                         model = lr_trainer.train_model()
                         metrics, y_train_pred, y_test_pred = lr_trainer.test_model()
@@ -420,26 +424,6 @@ class Interface():
                         st.session_state.model_trained = True
                         
                         st.balloons()
-            
-            if st.session_state.model_trained:
-                st.divider()
-                st.subheader("Model description")
-                if st.session_state.description is None:
-                    model_description = st.text_input("Add an outline to be"
-                        " stored with your model",
-                        placeholder = 'Example: "Model for predicting body weight '
-                        ' based on height and age"')
-                    if st.button("Save selection", type = "primary"):
-                        st.session_state.description = model_description
-                        st.rerun()
-                    st.warning("Adding a description is optional but recommended\n"
-                    " in order to avoid future confusions")
-                else:
-                    if st.button("Change description", type = "primary"):
-                        st.session_state.description = None
-                        st.rerun()
-                    actual = "Actual: " + st.session_state.description
-                    st.caption(actual)
             
             # Show results if model is trained
             if st.session_state.model_trained:

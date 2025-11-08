@@ -39,14 +39,14 @@ class LRTrainer:
             X = pd.DataFrame(X)
         if not isinstance(y, pd.DataFrame):
             y = pd.DataFrame(y)
-        self._split_dataset(X, y, train_size)
+        self._split_dataset(X, y, train_size, split_seed)
     
-    def _split_dataset(self, X, y, train_size: int):
+    def _split_dataset(self, X, y, train_size: int, split_seed):
         """Split dataset into train and test sets"""
         if self._test_available:
             self.X_train, self.X_test, self.y_train, \
             self.y_test = train_test_split(X, y, train_size=train_size,
-                                            random_state=18)
+                                            random_state = split_seed)
         else:
             self.X_train, self.X_test, self.y_train, self.y_test =\
                 X, None, y, None
