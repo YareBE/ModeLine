@@ -7,7 +7,6 @@ import io
 import joblib
 from model_trainer import LRTrainer
 
-
 MODELS_DIR = Path("models")
 
 class Interface():
@@ -26,7 +25,9 @@ class Interface():
             "model_trained": False,
             "file_uploader_key": 0,
             "na_method" : None,
-            "split_seed" : 1
+            "split_seed" : 1,
+            "model_saved": False,
+            "show_saved_models": False
         }
         
         for key, value in defaults.items():
@@ -143,12 +144,147 @@ class Interface():
                     buffer = io.BytesIO()
                     joblib.dump(joblib_packet, buffer)
                     buffer.seek(0) 
-                    st.download_button(
+
+                    if  st.download_button(
                             label="DOWNLOAD MODEL",
                             data=buffer,
                             file_name=f"{st.session_state.model_name}.joblib",
                             mime="application/octet-stream", 
-                            type = "primary")
+                            type = "primary"):
+                        st.session_state.model_saved = True
+                        st.rerun()
+
+                    if st.session_state.model_saved:
+                        st.success("✅ The model has been saved successfully!")
+            
+                        st.subheader("What would you like to do next?")
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            if st.button("Load Saved Models", use_container_width=True, type="secondary"):
+                                st.session_state.show_saved_models = True
+                                st.rerun()
+                        
+                        with col2:
+                            if st.button("Create a New Model)", use_container_width=True, type="secondary"):
+                                # Limpiar todo el session state
+                                for key in list(st.session_state.keys()):
+                                    if key != "file_uploader_key":
+                                        del st.session_state[key]
+                                st.session_state.file_uploader_key += 1
+                                st.rerun()
+   
+
+    def display_saved_models(self):
+        """Display and load previously saved models"""
+        
+        # Verificar que existe el modelo cargado
+        if "loaded_model_packet" not in st.session_state or st.session_state.loaded_model_packet is None:
+            return
+        
+        # Header con badge del modelo
+        col_title, col_badge = st.columns([3, 1])
+        with col_title:
+            st.header(f"{st.session_state.loaded_model_name}")
+
+        packet = st.session_state.loaded_model_packet
+        
+        # Descripción en un expander para no ocupar tanto espacio
+        st.subheader("Description")
+        if packet.get("description"):
+            st.info(packet["description"])
+        else:
+            st.warning("No description provided")
+        
+        # Fórmula
+        if packet.get("formula"):
+            st.subheader("Formula")
+            st.code(packet["formula"], language="python")
+        
+        # Features y Target en una sola fila más compacta
+        st.subheader("Model Configuration")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Features:**")
+            if packet.get("features"):
+                with st.container(border=True):
+                    for feat in packet["features"]:
+                        st.markdown(f"• `{feat}`")
+            else:
+                st.warning("No features information")
+        
+        with col2:
+            st.markdown("**Target:**")
+            if packet.get("target"):
+                with st.container(border=True):
+                    target = packet["target"][0]
+                    st.markdown(f"• `{target}`")
+            else:
+                st.warning("No target information")
+        
+        # Métricas con mejor visualización
+        st.divider()
+        st.subheader("Performance Metrics")
+        
+        if packet.get("metrics"):
+            metrics = packet["metrics"]
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### Training Set")
+                if metrics.get('train'):
+                    metrics_train = metrics['train']
+                    st.metric("R² Score", f"{metrics_train['r2']:.4f}")
+                    st.metric("MSE", f"{metrics_train['mse']:.4f}")
+                else:
+                    st.warning("No training metrics available")
+            
+            with col2:
+                st.markdown("#### Test Set")
+                if metrics.get('test'):
+                    metrics_test = metrics['test']
+                    st.metric("R² Score", f"{metrics_test['r2']:.4f}")
+                    st.metric("MSE", f"{metrics_test['mse']:.4f}")
+                else:
+                    st.warning("No test set metrics available")
+
+        else:
+            st.warning("No metrics information available")
+        
+        st.divider()
+        
+        # Botones de acción con mejor organización
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🔄 Load Another Model", use_container_width=True, type="secondary"):
+                # Solo limpiar el modelo actual, mantener el resto del estado
+                st.session_state.loaded_model_packet = None
+                st.session_state.loaded_model_name = None
+                st.session_state.show_saved_models = True
+                # Incrementar key para resetear el file_uploader
+                if "model_uploader_key" not in st.session_state:
+                    st.session_state.model_uploader_key = 0
+                st.session_state.model_uploader_key += 1
+                st.rerun()
+        
+        with col2:
+            if st.button("Create New Model", use_container_width=True, type="secondary"):
+                # Limpiar todo el session state
+                for key in list(st.session_state.keys()):
+                    if key != "file_uploader_key":
+                        del st.session_state[key]
+                st.session_state.file_uploader_key += 1
+                st.rerun()
+        
+        with col3:
+            if st.button("Unload Model", use_container_width=True, type="secondary"):
+                st.session_state.loaded_model_packet = None
+                st.session_state.loaded_model_name = None
+                st.session_state.show_saved_models = False
+                st.rerun()
+
 
     def render_sidebar(self):
         """Render the complete sidebar with all controls"""
@@ -329,6 +465,57 @@ class Interface():
                 col1, col2 = st.columns(2)
                 col1.metric("Train", f"{train_rows}")
                 col2.metric("Test", f"{test_rows}")
+                
+                st.divider()
+
+                # LOAD A SAVED MODEL
+                if st.session_state.show_saved_models: 
+                    st.subheader("6️⃣ Load Saved Model")
+                    st.write("Upload a previously saved model file (.joblib)")
+            
+                    # Usar key dinámica para resetear el uploader
+                    uploader_key = f"model_file_uploader_{st.session_state.get('model_uploader_key', 0)}"
+                    
+                    uploaded_model = st.file_uploader(
+                        "Select your model file",
+                        type=["joblib"],
+                        key=uploader_key,
+                        help="Upload a .joblib file containing a previously saved model"
+                    )
+                    
+                    if uploaded_model is not None:
+                        # Mostrar preview de información del archivo
+                        st.info(f"File: {uploaded_model.name}")
+                        
+
+                        if st.button("Load Model", type="primary", use_container_width=True):
+                            with st.spinner("Loading model..."):
+                                try:
+                                    # Intentar cargar el modelo
+                                    loaded_packet = joblib.load(uploaded_model)
+                                    
+                                    # Validar estructura básica del packet
+                                    required_keys = ["model", "features"]
+                                    missing_keys = [key for key in required_keys if key not in loaded_packet]
+                                    
+                                    if missing_keys:
+                                        st.error(f"❌ Invalid model file. Missing keys: {', '.join(missing_keys)}")
+                                        return
+                                    
+                                    # Guardar en session state
+                                    st.session_state.loaded_model_packet = loaded_packet
+                                    st.session_state.loaded_model_name = uploaded_model.name.replace('.joblib', '')
+                                    st.session_state.show_saved_models = False
+                                    
+                                    st.success(f"✅ Model '{uploaded_model.name}' loaded successfully!")
+                                    st.balloons()
+                                    st.rerun()
+                                    
+                                except Exception as e:
+                                    st.error(f"❌ Error loading model: {str(e)}")
+                                    st.exception(e)
+
+                
 
     def display_dataframe(self):
         """Fragment for dataframe display to avoid full rerun on checkbox toggle"""
@@ -412,7 +599,12 @@ class Interface():
         st.title("ModeLine")
         st.header("Train and visualize linear regression models")
         st.divider()
-        
+
+        # Si hay un modelo cargado, mostrar solo ese modelo
+        if "loaded_model_packet" in st.session_state and st.session_state.loaded_model_packet is not None:
+            self.display_saved_models()
+            return
+            
         if st.session_state.dataframe is None:
             st.info("👈 Upload a dataset using the sidebar")
             st.markdown("""
@@ -459,6 +651,7 @@ class Interface():
                         st.session_state.lr_trainer = lr_trainer
                         st.session_state.model_trained = True
                         st.session_state.formula = lr_trainer.get_formula()
+                        st.session_state.model_saved = False
                         
                         st.balloons()
             
