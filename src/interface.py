@@ -3,8 +3,10 @@ from data_manager import DataUploader
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import io
 import joblib
 from model_trainer import LRTrainer
+
 
 MODELS_DIR = Path("models")
 
@@ -110,6 +112,43 @@ class Interface():
                 return [''] * len(col)
         
         return _df.style.apply(highlight_columns)
+    
+    def store_model(self):
+        if st.session_state.model_trained == True:
+            st.subheader("Liked the performance? Save your model")
+            st.text_input("Add an outline to be"
+                " stored with your model",
+                placeholder = 'Example: "Model for predicting body weight '
+                ' based on height and age"', key = "model_description")
+            if st.session_state.model_description == '':
+                st.warning("Adding a description is optional but recommended\n"
+                " in order to avoid future confusions")
+            joblib_packet = {
+            "model": st.session_state.model, 
+            "description": st.session_state.model_description,
+            "features" : st.session_state.selected_features,
+            "target" : st.session_state.selected_target, 
+            "formula" : st.session_state.formula,
+            "metrics" : st.session_state.metrics
+            }
+
+            st.text_input("File name (without extension):", value="exported_model", \
+                        key = "model_name")
+            if st.session_state.model_name == '':
+                st.warning("This field can't be empty!\n"
+                " ")
+            else:
+                col1, col2, col3 = st.columns([1, 3, 1])
+                with col2:
+                    buffer = io.BytesIO()
+                    joblib.dump(joblib_packet, buffer)
+                    buffer.seek(0) 
+                    st.download_button(
+                            label="DOWNLOAD MODEL",
+                            data=buffer,
+                            file_name=f"{st.session_state.model_name}.joblib",
+                            mime="application/octet-stream", 
+                            type = "primary")
 
     def render_sidebar(self):
         """Render the complete sidebar with all controls"""
@@ -328,13 +367,11 @@ class Interface():
 
     def visualize_results(self):
         """Display model results"""
-        if "lr_trainer" in st.session_state and st.session_state.model_trained:
+        if st.session_state.model_trained:
             
             st.divider()
             st.header("Model Results")
-            formula = st.session_state.lr_trainer.get_formula()
-            st.info(formula)
-            
+            st.info(st.session_state.formula)
             # Display metrics
             st.subheader("Performance Metrics")
             col1, col2 = st.columns(2)
@@ -362,14 +399,6 @@ class Interface():
             )
             st.plotly_chart(fig, use_container_width=True)
             st.divider()
-
-            st.subheader("Liked the performance? Save your model")
-            st.text_input("Add an outline to be"
-                " stored with your model",
-                placeholder = 'Example: "Model for predicting body weight '
-                ' based on height and age"', key = "model_description")
-            st.warning("Adding a description is optional but recommended\n"
-            " in order to avoid future confusions")
 
     def render_main_content(self):
         """Render the main content area"""
@@ -422,12 +451,14 @@ class Interface():
                         st.session_state.metrics = metrics
                         st.session_state.lr_trainer = lr_trainer
                         st.session_state.model_trained = True
+                        st.session_state.formula = lr_trainer.get_formula()
                         
                         st.balloons()
             
             # Show results if model is trained
             if st.session_state.model_trained:
                 self.visualize_results()
+                self.store_model()
 
     def run(self):
         """Main application runner"""
