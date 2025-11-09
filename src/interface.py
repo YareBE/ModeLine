@@ -192,7 +192,7 @@ class Interface():
 
             self.load_models_section()
             
-            if st.session_state["model"] is None and st.session_state.dataframe is not None:
+            if st.session_state.dataframe is not None:
                 df = st.session_state.dataframe
                 available_columns = self.get_numeric_columns(df)
 
@@ -395,9 +395,16 @@ class Interface():
             # Predictions plot
             st.divider()
             st.subheader("Predictions Visualization")
-            fig = st.session_state.lr_trainer.plot_results(
+            specific_fig, main_fig = st.session_state.lr_trainer.plot_results(
             )
-            st.plotly_chart(fig, use_container_width=True)
+
+            # Mostrar siempre la comparación entre esperado y predecido
+            st.plotly_chart(main_fig, use_container_width=True)
+
+            # Si el número de features es > 2, mostramos otro gráfico
+            if specific_fig is not None:
+                st.plotly_chart(specific_fig, use_container_width=True)
+
             st.divider()
 
     def render_main_content(self):
@@ -409,7 +416,7 @@ class Interface():
         if st.session_state.dataframe is None:
             st.info("👈 Upload a dataset using the sidebar")
             st.markdown("""
-            ### Getting Started
+            # Getting Started
             1. Upload dataset (CSV, Excel, SQLite)
             2. Select features (numeric only)
             3. Choose target variable (numeric)

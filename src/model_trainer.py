@@ -139,10 +139,61 @@ class LRTrainer:
         
         try:
             n_features = self.X_train.shape[1]
-            fig = go.Figure()
+
+            # Creamos def_fig que siempre se muestra
+            def_fig = go.Figure()
+
+            # Convertir a arrays 1D
+            y_train_actual = self.y_train.values.ravel()
+                    
+            # Puntos train
+            def_fig.add_trace(go.Scatter(
+                x=y_train_actual, y=self.y_train_pred,
+                mode='markers', name='Train',
+                marker=dict(size=5, color='#2E86AB', opacity=0.5)
+            ))
+
+            if self._test_available:
+                y_test_actual = self.y_test.values.ravel()
+                def_fig.add_trace(go.Scatter(
+                        x=y_test_actual, y=self.y_test_pred,
+                        mode='markers', name='Test',
+                        marker=dict(size=6, color='#A23B72',\
+                                    opacity=0.6, symbol='x')
+                    ))
+                all_values = np.concatenate([y_train_actual, y_test_actual,
+                                            self.y_train_pred, self.y_test_pred])
+            else:
+                all_values = np.concatenate([y_train_actual, self.y_train_pred])
             
+            # Línea perfecta (y = x)
+            min_val, max_val = all_values.min(), all_values.max()
+            
+            # Añadir margen
+            margin = (max_val - min_val) * 0.05
+            min_val -= margin
+            max_val += margin
+            
+            def_fig.add_trace(go.Scatter(
+                x=[min_val, max_val], y=[min_val, max_val],
+                mode='lines', name='Perfect',
+                line=dict(color='black', width=2, dash='dash')
+            ))
+            
+            def_fig.update_layout(
+                title='Actual vs Predicted Values',
+                xaxis_title='Actual', yaxis_title='Predicted',
+                template='plotly_white', height=700,
+                yaxis=dict(scaleanchor="x", scaleratio=1)
+            )
+
+            # Solo creamos fig para casos específicos (1  o 2 features)
+            fig = None 
+
             # CASO 1: Una variable - Gráfico 2D con línea de regresión
             if n_features == 1:
+                fig = go.Figure()
+
                 # Puntos de train y test
                 fig.add_trace(go.Scatter(
                     x=self.X_train.iloc[:, 0], y=self.y_train.iloc[:, 0],
@@ -177,6 +228,8 @@ class LRTrainer:
             
             # CASO 2: Dos variables - Gráfico 3D con plano
             elif n_features == 2:
+                fig = go.Figure()
+
                 # Puntos de train
                 fig.add_trace(go.Scatter3d(
                     x=self.X_train.iloc[:, 0], 
@@ -221,54 +274,10 @@ class LRTrainer:
                     ),
                     template='plotly_white', height=700
                 )
-            
-            # CASO 3: Más variables - Actual vs Predicted
-            else:
-                # Convertir a arrays 1D
-                y_train_actual = self.y_train.values.ravel()
-                    
-                # Puntos train
-                fig.add_trace(go.Scatter(
-                    x=y_train_actual, y=self.y_train_pred,
-                    mode='markers', name='Train',
-                    marker=dict(size=5, color='#2E86AB', opacity=0.5)
-                ))
 
-                if self._test_available:
-                    y_test_actual = self.y_test.values.ravel()
-                    fig.add_trace(go.Scatter(
-                            x=y_test_actual, y=self.y_test_pred,
-                            mode='markers', name='Test',
-                            marker=dict(size=6, color='#A23B72',\
-                                        opacity=0.6, symbol='x')
-                        ))
-                    all_values = np.concatenate([y_train_actual, y_test_actual,
-                                                self.y_train_pred, self.y_test_pred])
-                else:
-                    all_values = np.concatenate([y_train_actual, self.y_train_pred])
-                
-                # Línea perfecta (y = x)
-                min_val, max_val = all_values.min(), all_values.max()
-                
-                # Añadir margen
-                margin = (max_val - min_val) * 0.05
-                min_val -= margin
-                max_val += margin
-                
-                fig.add_trace(go.Scatter(
-                    x=[min_val, max_val], y=[min_val, max_val],
-                    mode='lines', name='Perfect',
-                    line=dict(color='black', width=2, dash='dash')
-                ))
-                
-                fig.update_layout(
-                    title='Actual vs Predicted Values',
-                    xaxis_title='Actual', yaxis_title='Predicted',
-                    template='plotly_white', height=700,
-                    yaxis=dict(scaleanchor="x", scaleratio=1)
-                )
-
-            return fig
+            # Devolvemos ambas figuras (fig será None si n_features > 2)
+            return fig, def_fig
+        
             
         except Exception as e:
             raise RuntimeError(f"Error plotting results: {str(e)}")
