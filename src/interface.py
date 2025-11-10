@@ -254,12 +254,12 @@ class Interface():
         
         st.divider()
         
-        # Botones de acción con mejor organización
+        # Botones de acción 
         col1, col2, col3 = st.columns(3)
         
         with col1:
             if st.button("🔄 Load Another Model", use_container_width=True, type="secondary"):
-                # Solo limpiar el modelo actual, mantener el resto del estado
+                # Limpiamos el modelo actual, para mostrar el nuevo
                 st.session_state.loaded_model_packet = None
                 st.session_state.loaded_model_name = None
                 st.session_state.show_saved_models = True
@@ -295,28 +295,43 @@ class Interface():
             # FILE UPLOAD
             st.subheader("1️⃣ Data Upload")
             uploaded_file = st.file_uploader(
-                "Upload your dataset",
-                type=["csv", "xls", "xlsx", "db", "sqlite"],
-                help="Supported formats: CSV, Excel, SQLite",
+                "Upload your dataset or a previously saved model",
+                type=["csv", "xls", "xlsx", "db", "sqlite", "joblib"],
+                help="Supported formats: CSV, Excel, SQLite and Joblib",
                 key=f"file_uploader_{st.session_state.file_uploader_key}"
             )
             
             if uploaded_file is not None and st.session_state.dataframe is None:
-                with st.spinner("Loading data..."):
-                    df = self.load_file(uploaded_file)
-                    if not isinstance(df, pd.DataFrame):
-                        st.error(str(df))
-                        return
-                    elif len(df) == 0:
-                        st.error("ERROR: empty dataset")
-                        return
-                    else:
-                        st.session_state.dataframe = df
-                        self.reset_downstream_selections(1)
-                        st.success(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
+                # Check the extension of the file
+                if uploaded_file is not None:
+                    file_extension = uploaded_file.name.split('.')[-1].lower()
+                
+                if file_extension != "joblib" and st.session_state.dataframe is None:
+                    with st.spinner("Loading data..."):
+                        df = self.load_file(uploaded_file)
+                        if not isinstance(df, pd.DataFrame):
+                            st.error(str(df))
+                            return
+                        elif len(df) == 0:
+                            st.error("ERROR: empty dataset")
+                            return
+                        else:
+                            st.session_state.dataframe = df
+                            self.reset_downstream_selections(1)
+                            st.success(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
+                
+                elif file_extension == "joblib" and st.session_state.model is None:
+                    with st.spinner("Loading data..."):
+                        try:
+                            st.session_state.model = joblib.load(uploaded_file)
+                            st.success(f"✅ Model '{uploaded_file.name}' correctly uploaded.")
+                        except Exception as e:
+                            st.error(f"Error loading model: {str(e)}")
+                            return
+              
             
             if st.session_state.dataframe is not None:
-                if st.button("🔄 Upload Different File", use_container_width=True,
+                if st.button("🔄 Upload Different File or Model", use_container_width=True,
                            help="Change dataset", key="reset_btn"):
                     # Clear all session state
                     for key in list(st.session_state.keys()):
@@ -324,6 +339,13 @@ class Interface():
                             del st.session_state[key]
                     st.session_state.file_uploader_key += 1
                     self.initialize_session_state()
+                    st.rerun()
+
+            if st.session_state.model is not None:
+                if st.button("🔄 Upload Different Model or File", use_container_width=True,
+                           help="Change model", key="reset_model_btn"):
+                    st.session_state.model = None
+                    st.session_state.file_uploader_key += 1
                     st.rerun()
 
             self.load_models_section()
