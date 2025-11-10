@@ -118,7 +118,7 @@ def na_handler():
                 processed = apply_na_handling(selected_data, na_method, constant_value)
                 if not processed.empty:
                     st.session_state.processed_data = processed
-                st.write(st.session_state.processed_data)
+                st.rerun()
         
                 
 
@@ -136,23 +136,22 @@ def set_split():
     if not st.session_state.trainset_only:
         col1, col2 = st.columns([1, 4])
         with col1:
-            split_seed = st.number_input("Seed",
-                        help = "This seed will be used for a " \
-                        "random but repeteable split-generation",
-                        value = st.session_state.seed
-                    )
-            st.session_state.split_seed = split_seed
+            st.number_input("Seed",
+                    help = "This seed will be used for a " \
+                    "random but repeteable split-generation",
+                    key = "seed",
+                    value = 1)
+                        
         with col2:
             train_size = st.slider(
                 "Training %",
                 min_value=5,
                 max_value=95,
-                value=80,
+                value = 80,
                 step=1,
                 help="Train/test split percentage",
-                key="train_slider"
+                key="train_size"
             )
-            st.session_state.train_size = train_size
     
     total_rows = len(df)
     train_rows = int(total_rows * train_size / 100)

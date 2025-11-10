@@ -11,16 +11,16 @@ from model_serializer import *
 def reset_downstream_selections(level):
         """Reset selections that depend on upstream choices"""
         if level <= 1:
-            keys_to_reset = ["features", "target", "model_trained"]
+            keys_to_reset = ["features", "target", "model"]
             for key in keys_to_reset:
                 if key == "features" or key == "target":
                     st.session_state[key] = []
                 else:
-                    st.session_state[key] = None if key != "model_trained" else False
+                    st.session_state[key] = None
         elif level <= 2:
-            keys_to_reset = ["processed_data","description", "model_trained", "na_method"]
+            keys_to_reset = ["processed_data","description", "model", "na_method"]
             for key in keys_to_reset:
-                st.session_state[key] = None if key != "model_trained" else False
+                st.session_state[key] = None
 class Interface:
     def __init__(self):
         self.initialize_session_state()
@@ -31,12 +31,11 @@ class Interface:
             "df": None,
             "features": [],
             "target": [],
-            "train_size": 100,
             "model_trained": False,
             "processed_data" : None,
             "na_method" : None,
-            "seed" : 1,
             "trainset_only" : False,
+            "model" : None
         }
         
         for key, value in defaults.items():
@@ -90,43 +89,40 @@ class Interface:
             6. Train your model and visualize it!
             """)
             return
-
-        display_dataframe()
+        else:
+            display_dataframe()
         
         # MODEL TRAINING SECTION
-        if st.session_state.processed_data is not None and st.session_state.model is not None:
+        if st.session_state.processed_data is not None and st.session_state.model is None:
             st.success("✅ Data ready for training!")
             st.divider()
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button("TRAIN MODEL", type="primary", use_container_width=True, key="train_btn"):
                     with st.spinner("Training model..."):
-                        features = st.session_state.features
-                        target = st.session_state.target
                         # Prepare data
-                        X = st.session_state.processed_data[features]
-                        y = st.session_state.processed_data[target]
+                        X = st.session_state.processed_data[st.session_state.features]
+                        y = st.session_state.processed_data[st.session_state.target]
                         # Train model
                         lrt = LRTrainer(X, y, float(st.session_state.train_size/100), st.session_state.seed)
-                        X_train, X_test, y_train, y_test = lrt.get_splitted_subsets()
-                        model = lrt.train_model()
-                        metrics, y_train_pred, y_test_pred = lrt.test_model()
-                        formula = lrt.get_formula()
-                        st.session_state.model_trained = True
+                        st.session_state.X_train, st.session_state.X_test, st.session_state.y_train, st.session_state.y_test = lrt.get_splitted_subsets()
+                        st.session_state.model = lrt.train_model()
+                        st.session_state.metrics, st.session_state.y_train_pred, st.session_state.y_test_pred = lrt.test_model()
+                        st.session_state.formula = lrt.get_formula()
                         st.balloons()
             
-            if st.session_state.model_trained:
-                st.divider()
-                st.header("Model Results")
-                visualize_results(formula, metrics)
+        if st.session_state.model is not None:
+            st.divider()
+            st.header("Model Results")
+            visualize_results()
 
-                st.divider()
-                st.subheader("Predictions Visualization")
-                plot_results(model, X_train, X_test, y_train, y_test, y_train_pred, y_test_pred)
+            st.divider()
+            st.subheader("Predictions Visualization")
+            plot_results()
 
-                st.divider()
-                if st.session_state.model_trained:
-                    store_model(model, features, target, formula, metrics)
+            st.divider()
+            if st.session_state.model is not None and st.session_state.df is not None:
+                store_model()
 
     def run(self):
         """Main application runner"""

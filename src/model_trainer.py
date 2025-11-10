@@ -110,7 +110,6 @@ class LRTrainer:
                     'mse': mean_squared_error(self.y_train, y_train_pred)
                 }     
             }
-            self.y_train_pred = y_train_pred.ravel()
 
             if self._test_available:
                 y_test_pred = self.model.predict(self.X_test)
@@ -118,7 +117,6 @@ class LRTrainer:
                         'r2': r2_score(self.y_test, y_test_pred),
                         'mse': mean_squared_error(self.y_test, y_test_pred)
                     }
-                self.y_test_pred = y_test_pred.ravel()
 
             return metrics, y_train_pred, y_test_pred
   

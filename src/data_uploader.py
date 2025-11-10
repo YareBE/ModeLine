@@ -8,8 +8,7 @@ def upload_file():
     uploaded_file = st.file_uploader(
         "Upload your dataset or a previously saved model",
                 type=["csv", "xls", "xlsx", "db", "sqlite", "joblib"],
-                help="Supported formats: CSV, Excel, SQLite and Joblib",
-                key=f"file_uploader_{st.session_state.file_uploader_key}"
+                help="Supported formats: CSV, Excel, SQLite and Joblib"
             )
     
 
@@ -17,7 +16,7 @@ def upload_file():
         extension = uploaded_file.name.split('.')[-1].lower()
         if extension != "joblib":
             with st.spinner("Loading data..."):
-                df = _error_handler(uploaded_file)
+                df = _error_handler(uploaded_file, extension)
                 if df is None:
                     return None
                 elif df.empty:
@@ -32,6 +31,8 @@ def upload_file():
         else:
             with st.spinner("Loading data..."):
                 try:
+                    reset_downstream_selections(1)
+                    st.session_state.df = None
                     st.session_state.model = joblib.load(uploaded_file)
                     st.success(f"✅ Model '{uploaded_file.name}' correctly uploaded.")
                 except Exception as e:

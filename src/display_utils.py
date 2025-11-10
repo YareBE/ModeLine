@@ -51,23 +51,23 @@ def style_dataframe( _df, features, target, *args, **kwargs):
 
      
 
-def visualize_results(formula, metrics):
+def visualize_results():
         """Display model results"""
-        if st.session_state.model_trained:
-            st.info(formula)
+        if st.session_state.model is not None:
+            st.info(st.session_state.formula)
             # Display metrics
             st.subheader("Performance Metrics")
             col1, col2 = st.columns(2)
             
             with col1:
                 st.markdown("#### Training Set")
-                metrics_train = metrics['train']
+                metrics_train = st.session_state.metrics['train']
                 st.metric("R² Score", f"{metrics_train['r2']:.4f}")
                 st.metric("MSE", f"{metrics_train['mse']:.4f}")
             with col2:
                 if not st.session_state.trainset_only:
                         st.markdown("#### Test Set")
-                        metrics_test = metrics['test']
+                        metrics_test = st.session_state.metrics['test']
                         st.metric("R² Score", f"{metrics_test['r2']:.4f}")
                         st.metric("MSE", f"{metrics_test['mse']:.4f}")
                 else:
@@ -75,38 +75,46 @@ def visualize_results(formula, metrics):
                     st.warning("Remember, the performance is counting" \
                     " only the training set,\n so the results are not realistic")
 
-def plot_results(model, X_train, X_test, y_train, y_test, y_train_pred, y_test_pred):
+
+def plot_results():
         """Create an interactive visualization of predictions vs actual values"""
-        if not st.session_state.model_trained:
+        X_train, X_test, y_train, y_test, y_train_pred, y_test_pred, model = \
+        st.session_state.X_train, st.session_state.X_test, st.session_state.y_train, st.session_state.y_test, st.session_state.y_train_pred, st.session_state.y_test_pred, st.session_state.model
+        if st.session_state.model is None:
             raise ValueError("Model not trained yet. Call train_model() first")
         
         if y_train_pred is None:
             raise ValueError("Model not tested yet. Call test_model() first")
         
         try:
-            n_features =  X_train.shape[1]
-
+            n_features = X_train.shape[1]
             # Creamos def_fig que siempre se muestra
             def_fig = go.Figure()
+
+            # Convertir a arrays 1D
+            y_train_pred = y_train_pred.ravel()
+            y_train_actual =  y_train.values.ravel()
                     
             # Puntos train
             def_fig.add_trace(go.Scatter(
-                x=y_train, y= y_train_pred,
+                x=y_train_actual, y= y_train_pred,
                 mode='markers', name='Train',
                 marker=dict(size=5, color='#2E86AB', opacity=0.5)
             ))
 
             if not st.session_state.trainset_only:
+                y_test_pred = y_test_pred.ravel()
+                y_test_actual =  y_test.values.ravel()
                 def_fig.add_trace(go.Scatter(
-                        x=y_test, y= y_test_pred,
+                        x=y_test_actual, y= y_test_pred,
                         mode='markers', name='Test',
                         marker=dict(size=6, color='#A23B72',\
                                     opacity=0.6, symbol='x')
                     ))
-                all_values = np.concatenate([y_train, y_test,
-                                                y_train_pred,  y_test_pred])
+                all_values = np.concatenate([y_train_actual, y_test_actual,
+                                             y_train_pred,  y_test_pred])
             else:
-                all_values = np.concatenate([y_train,  y_train_pred])
+                all_values = np.concatenate([y_train_actual,  y_train_pred])
             
             # Línea perfecta (y = x)
             min_val, max_val = all_values.min(), all_values.max()
@@ -154,7 +162,7 @@ def plot_results(model, X_train, X_test, y_train, y_test, y_train_pred, y_test_p
                 # Línea de regresión
                 X_min, X_max =  X_train.iloc[:, 0].min(),  X_train.iloc[:, 0].max()
                 X_range = np.linspace(X_min, X_max, 100).reshape(-1, 1)
-                y_pred = model.predict(X_range)
+                y_pred =  model.predict(X_range)
                 fig.add_trace(go.Scatter(
                     x=X_range.ravel(), y=y_pred.ravel(),
                     mode='lines', name='Regression',
@@ -198,7 +206,7 @@ def plot_results(model, X_train, X_test, y_train, y_test, y_train_pred, y_test_p
                 x2_range = np.linspace(x2_min, x2_max, 15)
                 x1_grid, x2_grid = np.meshgrid(x1_range, x2_range)
                 X_grid = np.c_[x1_grid.ravel(), x2_grid.ravel()]
-                z_grid = model.predict(X_grid).reshape(x1_grid.shape)
+                z_grid =  model.predict(X_grid).reshape(x1_grid.shape)
                 
                 fig.add_trace(go.Surface(
                     x=x1_range, y=x2_range, z=z_grid,
@@ -217,11 +225,14 @@ def plot_results(model, X_train, X_test, y_train, y_test, y_train_pred, y_test_p
                     template='plotly_white', height=700
                 )
 
+            # Devolvemos ambas figuras (fig será None si n_features > 2)
+
             st.plotly_chart(def_fig, use_container_width=True)
             st.divider()
             if fig is not None:
                 st.plotly_chart(fig, use_container_width=True)
                 st.divider()
+
         except Exception as e:
             raise RuntimeError(f"Error plotting results: {str(e)}")
         
