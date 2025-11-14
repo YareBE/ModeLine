@@ -1,7 +1,5 @@
 import streamlit as st
 from data_uploader import upload_file
-import pandas as pd
-import numpy as np
 from data_preprocess import *
 from model_trainer import LRTrainer
 from display_utils import *
@@ -21,6 +19,7 @@ def reset_downstream_selections(level):
             keys_to_reset = ["processed_data","description", "model", "na_method"]
             for key in keys_to_reset:
                 st.session_state[key] = None
+
 class Interface:
     def __init__(self):
         self.initialize_session_state()
@@ -35,7 +34,8 @@ class Interface:
             "processed_data" : None,
             "na_method" : None,
             "trainset_only" : False,
-            "model" : None
+            "model" : None,
+            "model_name" : None
         }
         
         for key, value in defaults.items():
@@ -62,7 +62,6 @@ class Interface:
                 if st.session_state.features and st.session_state.target:
                     st.subheader("4️⃣ Handle NAs")
                     na_handler()
-               
 
                 if st.session_state.processed_data is not None:
                     st.divider()
@@ -70,59 +69,65 @@ class Interface:
                     set_split()
                     
 
-
     def render_main_content(self):
-        """Render the main content area"""
-        st.title("ModeLine")
-        st.header("Train and visualize linear regression models")
-        st.divider()
-        
-        if st.session_state.df is None:
-            st.info("👈 Upload a dataset using the sidebar")
-            st.markdown("""
-            ### Getting Started
-            1. Upload dataset (CSV, Excel, SQLite)
-            2. Select features (numeric only)
-            3. Choose target variable (numeric)
-            4. Handle missing values if any
-            5. Configure train/test split
-            6. Train your model and visualize it!
-            """)
-            return
-        else:
-            display_dataframe()
-        
-        # MODEL TRAINING SECTION
-        if st.session_state.processed_data is not None and st.session_state.model is None:
-            st.success("✅ Data ready for training!")
-            st.divider()
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button("TRAIN MODEL", type="primary", use_container_width=True, key="train_btn"):
-                    with st.spinner("Training model..."):
-                        # Prepare data
-                        X = st.session_state.processed_data[st.session_state.features]
-                        y = st.session_state.processed_data[st.session_state.target]
-                        # Train model
-                        lrt = LRTrainer(X, y, float(st.session_state.train_size/100), st.session_state.seed)
-                        st.session_state.X_train, st.session_state.X_test, st.session_state.y_train, st.session_state.y_test = lrt.get_splitted_subsets()
-                        st.session_state.model = lrt.train_model()
-                        st.session_state.metrics, st.session_state.y_train_pred, st.session_state.y_test_pred = lrt.test_model()
-                        st.session_state.formula = lrt.get_formula()
-                        st.balloons()
-            
-        if st.session_state.model is not None:
-            st.divider()
-            st.header("Model Results")
-            visualize_results()
+       """Render the main content area"""
+       st.title("ModeLine")
+       st.header("Train and visualize linear regression models")
+       st.divider()
+       
+       if st.session_state.model is not None and st.session_state.model_name is not None:
+           display_saved_models(st.session_state.model, st.session_state.model_name)
+           return 
 
-            st.divider()
-            st.subheader("Predictions Visualization")
-            plot_results()
+       if st.session_state.df is None:
+          st.info("👈 Upload a dataset using the sidebar")
+          st.markdown("""
+          ### Getting Started
+          1. Upload dataset (CSV, Excel, SQLite)
+          2. Select features (numeric only)
+          3. Choose target variable (numeric)
+          4. Handle missing values if any
+          5. Configure train/test split
+          6. Train your model and visualize it!
+           """)
+          return
+       else:
+           display_dataframe()
+        
 
-            st.divider()
-            if st.session_state.model is not None and st.session_state.df is not None:
-                store_model()
+        
+       # MODEL TRAINING SECTION
+       if st.session_state.processed_data is not None and st.session_state.model is None:
+           st.success("✅ Data ready for training!")
+           st.divider()
+           col1, col2, col3 = st.columns([1, 2, 1])
+           with col2:
+               if st.button("TRAIN MODEL", type="primary", use_container_width=True, key="train_btn"):
+                   with st.spinner("Training model..."):
+                       # Prepare data
+                       X = st.session_state.processed_data[st.session_state.features]
+                       y = st.session_state.processed_data[st.session_state.target]
+                       # Train model
+                       lrt = LRTrainer(X, y, float(st.session_state.train_size/100), st.session_state.seed)
+                       st.session_state.X_train, st.session_state.X_test, st.session_state.y_train, st.session_state.y_test = lrt.get_splitted_subsets()
+                       st.session_state.model = lrt.train_model()
+                       st.session_state.metrics, st.session_state.y_train_pred, st.session_state.y_test_pred = lrt.test_model()
+                       st.session_state.formula = lrt.get_formula()
+                       st.balloons()
+
+
+       if st.session_state.model is not None and st.session_state.df is not None:
+           st.divider()
+           st.header("Model Results")
+           visualize_results()
+
+           st.divider()
+           st.subheader("Predictions Visualization")
+           plot_results()
+
+           st.divider()
+           store_model()
+
 
     def run(self):
         """Main application runner"""

@@ -37,6 +37,7 @@ def display_dataframe():
         )
         st.dataframe(styled_df, use_container_width=True, height=400)
 
+
 def style_dataframe( _df, features, target, *args, **kwargs):
         """Cache styled dataframe to avoid recalculation"""
         def highlight_columns(col, *args, **kwargs):
@@ -48,7 +49,6 @@ def style_dataframe( _df, features, target, *args, **kwargs):
                 return [''] * len(col)
         
         return _df.style.apply(highlight_columns)
-
      
 
 def visualize_results():

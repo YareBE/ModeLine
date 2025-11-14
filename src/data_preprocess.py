@@ -68,7 +68,6 @@ def _features_selection(available_columns):
         reset_downstream_selections(2)
     
  
-    
 def _target_selection(available_columns):
     target_options = [col for col in available_columns if col not in st.session_state.features]
     if not target_options:
@@ -85,7 +84,6 @@ def _target_selection(available_columns):
     if selected_target != st.session_state.target:
         st.session_state.target = selected_target
         reset_downstream_selections(2)
-    
     
 
 def na_handler():

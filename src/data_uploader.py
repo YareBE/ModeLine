@@ -1,6 +1,5 @@
 import pandas as pd
 import sqlite3
-import openpyxl
 import streamlit as st
 import joblib
 
@@ -11,7 +10,6 @@ def upload_file():
                 help="Supported formats: CSV, Excel, SQLite and Joblib"
             )
     
-
     if uploaded_file is not None:
         extension = uploaded_file.name.split('.')[-1].lower()
         if extension != "joblib":
@@ -31,9 +29,11 @@ def upload_file():
         else:
             with st.spinner("Loading data..."):
                 try:
+                    from interface import reset_downstream_selections
                     reset_downstream_selections(1)
                     st.session_state.df = None
                     st.session_state.model = joblib.load(uploaded_file)
+                    st.session_state.model_name = uploaded_file.name.replace('.joblib', '')
                     st.success(f"✅ Model '{uploaded_file.name}' correctly uploaded.")
                 except Exception as e:
                     st.error(f"Error loading model: {str(e)}")
@@ -53,6 +53,7 @@ def _error_handler(file, extension):
         elif extension in ('db', 'sqlite'):
             conn = sqlite3.connect(':memory:') 
             data = _upload_sql(file, conn)
+
         return data
     
     except Exception as err:
