@@ -9,7 +9,7 @@ from model_serializer import *
 def reset_downstream_selections(level):
         """Reset selections that depend on upstream choices"""
         if level <= 1:
-            keys_to_reset = ["features", "target", "model"]
+            keys_to_reset = ["features", "target", "df"]
             for key in keys_to_reset:
                 if key == "features" or key == "target":
                     st.session_state[key] = []
@@ -19,7 +19,6 @@ def reset_downstream_selections(level):
             keys_to_reset = ["processed_data","description", "model", "na_method"]
             for key in keys_to_reset:
                 st.session_state[key] = None
-
 class Interface:
     def __init__(self):
         self.initialize_session_state()
@@ -35,7 +34,9 @@ class Interface:
             "na_method" : None,
             "trainset_only" : False,
             "model" : None,
-            "model_name" : None
+            "model_name" : None,
+            "file" : None,
+            "loaded_packet": None
         }
         
         for key, value in defaults.items():
@@ -75,10 +76,10 @@ class Interface:
        st.header("Train and visualize linear regression models")
        st.divider()
        
-       if st.session_state.model is not None and st.session_state.model_name is not None:
-           display_saved_models(st.session_state.model, st.session_state.model_name)
-           return 
-
+       if st.session_state.loaded_packet is not None:
+            display_saved_models()
+            return
+        
        if st.session_state.df is None:
           st.info("👈 Upload a dataset using the sidebar")
           st.markdown("""

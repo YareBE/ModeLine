@@ -1,43 +1,46 @@
 import pandas as pd
 import sqlite3
+import openpyxl
 import streamlit as st
 import joblib
+
 
 def upload_file():
     uploaded_file = st.file_uploader(
         "Upload your dataset or a previously saved model",
                 type=["csv", "xls", "xlsx", "db", "sqlite", "joblib"],
-                help="Supported formats: CSV, Excel, SQLite and Joblib"
+                help="Supported formats: CSV, Excel, SQLite and Joblib",
+                key = "current_file"
             )
     
-    if uploaded_file is not None:
+    if st.session_state.file != st.session_state.current_file:
+        for key in st.session_state: #No funcionaba con reset_downstream
+            if key == "features" or key == "target":
+                    st.session_state[key] = []
+            elif key in ["processed_data","description", "model", "na_method", "df", "loaded_packet"]:
+                st.session_state[key] = None
+
+        st.session_state.file = uploaded_file
+        if uploaded_file is None:
+            return None
         extension = uploaded_file.name.split('.')[-1].lower()
         if extension != "joblib":
+            df = _error_handler(uploaded_file, extension)
             with st.spinner("Loading data..."):
-                df = _error_handler(uploaded_file, extension)
-                if df is None:
-                    return None
-                elif df.empty:
+                if df.empty:
                     st.error("ERROR: empty dataset, choose another one")
-                    return None
                 else:
-                    if not df.equals(st.session_state.df):
-                        from interface import reset_downstream_selections
-                        reset_downstream_selections(1)
-                        st.session_state.df = df
-                        st.success(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
+                    st.session_state.df = df
+                    st.success(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
+
         else:
             with st.spinner("Loading data..."):
                 try:
-                    from interface import reset_downstream_selections
-                    reset_downstream_selections(1)
-                    st.session_state.df = None
-                    st.session_state.model = joblib.load(uploaded_file)
+                    st.session_state.loaded_packet = joblib.load(uploaded_file)
                     st.session_state.model_name = uploaded_file.name.replace('.joblib', '')
                     st.success(f"✅ Model '{uploaded_file.name}' correctly uploaded.")
                 except Exception as e:
                     st.error(f"Error loading model: {str(e)}")
-                    return
 
 @st.cache_data(show_spinner=False)
 def _error_handler(file, extension):
