@@ -3,7 +3,7 @@ from data_uploader import upload_file
 from data_preprocess import (
     parameters_selection, na_handler, set_split, reset_downstream_selections
 )
-from model_trainer import LRTrainer
+from model_trainer import LRTrainer, predict
 from display_utils import (
     display_dataframe, visualize_results, plot_results, display_saved_models
 )
@@ -110,6 +110,9 @@ class Interface:
             visualize_results()
 
             st.divider()
+            predict()
+
+            st.divider()
             st.subheader("Predictions Visualization")
             plot_results()
 
@@ -123,7 +126,7 @@ class Interface:
             # Prepare data
             X = st.session_state.processed_data[st.session_state.features]
             y = st.session_state.processed_data[st.session_state.target]
-
+            
             # Train model
             if not st.session_state.trainset_only:
                 train_ratio = st.session_state.train_size / 100

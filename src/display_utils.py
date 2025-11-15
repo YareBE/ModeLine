@@ -540,7 +540,7 @@ def display_saved_models():
             st.session_state.model = packet["model"]
         else:
             st.warning("There is no model saved in the packet")
-            
+        
         # Descripción en un expander para no ocupar tanto espacio
         st.subheader("Description")
         if packet.get("description"):
