@@ -9,26 +9,10 @@ def upload_file():
     uploaded_file = st.file_uploader(
         "Upload your dataset or a previously saved model",
         type=["csv", "xls", "xlsx", "db", "sqlite", "joblib"],
-        help="Supported formats: CSV, Excel, SQLite and Joblib",
-        key="current_file"
+        help="Supported formats: CSV, Excel, SQLite and Joblib"
     )
 
-    # Only reset if file actually changed (by name and size)
-    file_changed = False
-    if uploaded_file is not None and st.session_state.file is not None:
-        # File changed if name or size is different
-        file_changed = (
-            uploaded_file.name != st.session_state.file.name or
-            uploaded_file.size != st.session_state.file.size
-        )
-    elif uploaded_file is None and st.session_state.file is not None:
-        # File was cleared
-        file_changed = True
-    elif uploaded_file is not None and st.session_state.file is None:
-        # New file selected (first time)
-        file_changed = True
-
-    if file_changed:
+    if st.session_state.file != uploaded_file:
         # Reset session state only when file actually changes
         for key in st.session_state:
             if key == "features" or key == "target":
