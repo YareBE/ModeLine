@@ -535,7 +535,12 @@ def display_saved_models():
             st.header(f"{st.session_state.model_name}")
 
         packet = st.session_state.loaded_packet
-        
+
+        if packet.get("model"):
+            st.session_state.model = packet["model"]
+        else:
+            st.warning("There is no model saved in the packet")
+            
         # Descripción en un expander para no ocupar tanto espacio
         st.subheader("Description")
         if packet.get("description"):
@@ -555,6 +560,7 @@ def display_saved_models():
         with col1:
             st.markdown("**Features:**")
             if packet.get("features"):
+                st.session_state.features = packet["features"]
                 with st.container(border=True):
                     for feat in packet["features"]:
                         st.markdown(f"• `{feat}`")

@@ -33,16 +33,7 @@ def get_na_info(df):
 
 
 def apply_na_handling(df, method, constant_value=None):
-    """Apply selected NA handling method to DataFrame.
-    
-    Args:
-        df: DataFrame with potential missing values
-        method: Handling method (Delete rows, Mean, Median, Constant)
-        constant_value: Value for constant method
-        
-    Returns:
-        DataFrame after applying NA handling
-    """
+    """Apply selected NA handling method to DataFrame."""
     df = df.copy()
     try:
         if method == "Delete rows":
@@ -92,11 +83,23 @@ def _dataset_info(df):
 def parameters_selection(df):
     """Handle feature and target selection from numeric columns."""
     available_columns = _dataset_info(df)
+    
     st.subheader("2️⃣ Features")
+    previous_features = st.session_state.features.copy()
     _features_selection(available_columns)
+    
+    # If features changed, reset downstream
+    if st.session_state.features != previous_features:
+        reset_downstream_selections(2)
+    
     st.divider()
     st.subheader("3️⃣ Target")
+    previous_target = st.session_state.target.copy()
     _target_selection(available_columns)
+    
+    # If target changed, reset downstream
+    if st.session_state.target != previous_target:
+        reset_downstream_selections(2)
 
     if not st.session_state.features or not st.session_state.target:
         st.info("Select features and target")
@@ -104,31 +107,31 @@ def parameters_selection(df):
 
 
 def _features_selection(available_columns):
-    """Handle feature selection UI."""
+    """Handle feature selection UI without on_change."""
     st.multiselect(
         "Training Features (Numeric)",
         options=[col for col in available_columns
-                 if col != st.session_state.target],
+                 if col not in st.session_state.get("target", [])],
         help="Select training features",
-        on_change=lambda: reset_downstream_selections(2),
-        key="features"
+        key="features",
+        default=st.session_state.get("features", [])
     )
 
 
 def _target_selection(available_columns):
-    """Handle target variable selection UI."""
+    """Handle target variable selection UI without on_change."""
     target_options = [col for col in available_columns
-                      if col not in st.session_state.features]
+                      if col not in st.session_state.get("features", [])]
     if not target_options:
         st.error("No variables left! Remove at least 1 feature")
         return
 
     st.multiselect(
         "Target Variable (Numeric)",
-        options=[""] + target_options,
+        options=target_options,
         max_selections=1,
+        default=st.session_state.get("target", []),
         help="Variable to predict",
-        on_change=lambda: reset_downstream_selections(2),
         key="target"
     )
 
@@ -180,15 +183,18 @@ def set_split():
     if not st.session_state.trainset_only:
         col1, col2 = st.columns([1, 4])
         with col1:
+            previous_seed = st.session_state.get("seed", 1)
             st.number_input(
                 "Seed",
                 help="Seed for reproducible split",
                 key="seed",
-                value=1,
-                on_change=lambda: reset_downstream_selections(3)
+                value=1
             )
+            if st.session_state.seed != previous_seed:
+                reset_downstream_selections(3)
 
         with col2:
+            previous_train_size = st.session_state.get("train_size", 80)
             st.slider(
                 "Training %",
                 min_value=5,
@@ -196,9 +202,10 @@ def set_split():
                 value=80,
                 step=1,
                 help="Train/test split percentage",
-                key="train_size",
-                on_change=lambda: reset_downstream_selections(3)
+                key="train_size"
             )
+            if st.session_state.train_size != previous_train_size:
+                reset_downstream_selections(3)
     else:
         st.session_state.train_size = 100
 

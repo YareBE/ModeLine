@@ -1,6 +1,5 @@
 import pandas as pd
 import sqlite3
-import openpyxl
 import streamlit as st
 import joblib
 

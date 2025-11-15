@@ -115,7 +115,6 @@ class Interface:
 
         # Store model section (always visible if model exists, independent of reruns)
         if st.session_state.model is not None:
-            st.divider()
             store_model()
 
     def _train_model(self):

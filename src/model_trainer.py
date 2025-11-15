@@ -2,8 +2,30 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
+import streamlit as st
 
 
+def predict():
+        """Compute predictions when there exists a model (created or loaded)"""
+
+        st.subheader("Predict with ModeLine")
+        st.markdown("### Enter the input values for your prediction")
+
+        features = st.session_state.features
+        assert type(features) == dict, "Runtime error: "
+        "Not enough information stored about features"
+
+        # features must be a dictionary now with pairs
+        # (feature's name, feature's type)
+        new_features = []
+        for feature in features.keys():
+            feat_type = features[feature]
+            if feat_type == "int":
+                new = st.number_input(f"{feature} ({feat_type} only)", step=1)
+            else:
+                new = float(st.number_input(f"{feature} ({feat_type} only)"))
+            new_features.append(new)
+        
 class LRTrainer:
     """Linear Regression trainer with validation and evaluation."""
 
@@ -220,4 +242,3 @@ class LRTrainer:
         except Exception as e:
             raise RuntimeError(f"Error testing model: {str(e)}")
 
-  
