@@ -34,7 +34,7 @@ def _dataset_info(df):
     col2.metric("Cols", len(df.columns))
     
     if cols_with_na:
-        st.caption(f"**NA Columns:** {', '.join(cols_with_na[:3])}{' ...' if len(cols_with_na) > 3 else ''}")
+        st.caption(f"**Columns with NA values:** {', '.join(cols_with_na[:3])}{' ...' if len(cols_with_na) > 3 else ''}")
 
     if len(df) < 10:
         st.warning("WARNING: As the dataset is too small, all of" \
@@ -156,5 +156,5 @@ def set_split():
     test_rows = total_rows - train_rows
     
     col1, col2 = st.columns(2)
-    col1.metric("Train", f"{train_rows}")
-    col2.metric("Test", f"{test_rows}")
+    col1.metric("Train rows", f"{train_rows}")
+    col2.metric("Test rows", f"{test_rows}")
