@@ -8,6 +8,8 @@ from display_utils import (
     display_dataframe, visualize_results, plot_results, display_saved_models
 )
 from model_serializer import store_model
+import pandas as pd
+import numpy as np
 
 
 class Interface:
@@ -30,7 +32,9 @@ class Interface:
             "model": None,
             "model_name": None,
             "file": None,
-            "loaded_packet": None
+            "loaded_packet": None,
+            "prediction_result": None,
+            "prediction_inputs": {}
         }
 
         for key, value in defaults.items():
@@ -62,6 +66,7 @@ class Interface:
                     st.subheader("5️⃣ Split")
                     set_split()
 
+
     def render_main_content(self):
         """Render the main content area."""
         st.title("ModeLine")
@@ -71,6 +76,7 @@ class Interface:
         # Display saved models if loaded
         if st.session_state.loaded_packet is not None:
             display_saved_models()
+            predict()
             return
 
         # Display getting started guide
@@ -84,6 +90,7 @@ class Interface:
                 4. Handle missing values if any
                 5. Configure train/test split
                 6. Train your model and visualize it!
+                7. Make predictions with your trained model
             """)
             return
 
@@ -111,6 +118,7 @@ class Interface:
 
             st.divider()
             predict()
+
 
             st.divider()
             st.subheader("Predictions Visualization")
@@ -146,6 +154,10 @@ class Interface:
             (st.session_state.metrics, st.session_state.y_train_pred,
              st.session_state.y_test_pred) = trainer.test_model()
             st.session_state.formula = trainer.get_formula()
+
+            # Reset prediction state when new model is trained
+            st.session_state.prediction_result = None
+            st.session_state.prediction_inputs = {}
 
             st.balloons()
 

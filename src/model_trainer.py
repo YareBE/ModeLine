@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
 import streamlit as st
+import numpy as np
 
 
 def predict():
@@ -16,8 +17,14 @@ def predict():
         new_features = []
         for name in features:
             new = st.number_input(name, value = 1)
-        
-            
+            new_features.append(new)
+
+        if st.button("PREDICT", type = "primary"):
+            new_features = np.array(new_features).reshape(-1, len(new_features))
+            prediction = st.session_state.model.predict(new_features)
+            st.markdown("#### Value of predictions:")
+            st.write(prediction[0][0].round(3))
+
 
 class LRTrainer:
     """Linear Regression trainer with validation and evaluation."""
@@ -161,78 +168,4 @@ class LRTrainer:
                 X, None, y, None
             )
 
-    def train_model(self):
-        """Train the linear regression model."""
-        if self.X_train is None or self.y_train is None:
-            raise ValueError(
-                "Training data not initialized. Check __init__ method"
-            )
-
-        try:
-            self.model = LinearRegression()
-            self.model.fit(self.X_train, self.y_train)
-            return self.model
-        except Exception as e:
-            raise RuntimeError(f"Error training model: {str(e)}")
-
-    def get_splitted_subsets(self):
-        """Get train/test subsets."""
-        return self.X_train, self.X_test, self.y_train, self.y_test
-
-    def get_formula(self):
-        """Get regression formula with feature names."""
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train_model() first")
-
-        try:
-            feature_names = self.X_train.columns.tolist()
-            target_name = self.y_train.columns[0]
-
-            coefs = self.model.coef_.ravel()
-            intercept = self.model.intercept_[0]
-
-            formula_parts = [f"{target_name} = "]
-
-            for i, (name, coef) in enumerate(zip(feature_names, coefs)):
-                if i == 0:
-                    formula_parts.append(f"{coef:.4f} * {name}")
-                else:
-                    sign = "+" if coef >= 0 else "-"
-                    formula_parts.append(f" {sign} {abs(coef):.4f} * {name}")
-
-            sign = "+" if intercept >= 0 else "-"
-            formula_parts.append(f" {sign} {abs(intercept):.4f}")
-
-            return "".join(formula_parts)
-
-        except Exception as e:
-            raise RuntimeError(f"Error generating formula: {str(e)}")
-
-    def test_model(self):
-        """Evaluate model performance on train/test sets."""
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train_model() first")
-
-        try:
-            y_train_pred = self.model.predict(self.X_train)
-            metrics = {
-                'train': {
-                    'r2': r2_score(self.y_train, y_train_pred),
-                    'mse': mean_squared_error(self.y_train, y_train_pred)
-                }
-            }
-
-            y_test_pred = None
-            if self._test_available:
-                y_test_pred = self.model.predict(self.X_test)
-                metrics['test'] = {
-                    'r2': r2_score(self.y_test, y_test_pred),
-                    'mse': mean_squared_error(self.y_test, y_test_pred)
-                }
-
-            return metrics, y_train_pred, y_test_pred
-
-        except Exception as e:
-            raise RuntimeError(f"Error testing model: {str(e)}")
-
-  
+ 
