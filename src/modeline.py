@@ -100,7 +100,6 @@ class Interface:
         if (st.session_state.processed_data is not None and
                 st.session_state.model is None):
             st.success("✅ Data ready for training!")
-            st.divider()
 
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:

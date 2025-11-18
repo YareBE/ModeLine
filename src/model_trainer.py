@@ -12,19 +12,37 @@ def predict():
         st.subheader("Predict with ModeLine")
         st.markdown("##### Enter the input values for your prediction")
 
-        features = st.session_state.features
+        features = st.session_state.features or st.session_state.loaded_packet.get("features")
+        target = st.session_state.target or st.session_state.loaded_packet.get("target")
 
-        new_features = []
-        for name in features:
-            new = st.number_input(name, value = 1)
-            new_features.append(new)
+        if not features or not target:
+            st.error("Features or target not found in session state")
+            return  
+        
+        model = st.session_state.get("model") or st.session_state.loaded_packet.get("model")
+        if model is None:
+            st.error("No model found. Train or load a model first")
+            return
 
-        if st.button("PREDICT", type = "primary"):
-            new_features = np.array(new_features).reshape(-1, len(new_features))
-            prediction = st.session_state.model.predict(new_features)
-            st.markdown("#### Value of predictions:")
-            st.write(prediction[0][0].round(3))
+        inputs = np.array([
+            st.number_input(name, value=1.0, step=0.1, width=200) 
+            for name in features]).reshape(1, -1)
 
+        if st.button("PREDICT", type="primary"):
+            try:
+                prediction = model.predict(inputs)
+                    
+                st.markdown("#### Predicted Value:")
+                
+                # Display results
+                st.metric(
+                    label=f"Predicted {target}",
+                    value=f"{prediction[0][0]:,.3f}"
+                )
+                    
+                st.success("✅ Prediction completed successfully!")
+            except Exception as e:
+                st.error(f"Error making prediction: {str(e)}")
 
 class LRTrainer:
     """Linear Regression trainer with validation and evaluation."""

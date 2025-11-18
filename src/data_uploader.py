@@ -33,7 +33,7 @@ def upload_file():
                     return None
                 st.session_state.df = df
                 st.success(
-                    f"✅ Loaded {len(df)} rows, {len(df.columns)} columns"
+                    f"✅ Dataset correctly loaded."
                 )
         else:
             with st.spinner("Loading data..."):
@@ -42,7 +42,7 @@ def upload_file():
                     st.session_state.model_name = (
                         uploaded_file.name.replace('.joblib', '')
                     )
-                    st.success(f"✅ Model '{uploaded_file.name}' loaded.")
+                    st.success(f"✅ Model correctly loaded.")
                 except Exception as e:
                     st.error(f"Error loading model: {str(e)}")
 

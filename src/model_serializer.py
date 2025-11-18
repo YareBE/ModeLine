@@ -51,7 +51,7 @@ def store_model():
             type="primary",
             use_container_width=True
         ):
-            st.success("✅ Everything went correctly!")
+            st.success(f"✅ Model {filename} downloaded correctly!")
 
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
