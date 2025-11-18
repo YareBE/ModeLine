@@ -10,16 +10,11 @@ def reset_downstream_selections(level):
             if key in ("features", "target"):
                 # Empty list for multiple selections
                 st.session_state[key] = []
-            else:
-                # None for unique objects
-                st.session_state[key] = None
-    elif level <= 2:
-        #  Reset for features/target changes
+    if level <= 2:
         keys_to_reset = ["processed_data", "na_method"]
         for key in keys_to_reset:
             st.session_state[key] = None
-    elif level <= 3:
-        # Reset for data split changes
+    if level <= 3:
         keys_to_reset = ["description", "model"]
         for key in keys_to_reset:
             st.session_state[key] = None
@@ -38,17 +33,7 @@ def get_na_info(df):
 
 
 def apply_na_handling(df, method, constant_value=None):
-    """Apply selected NA handling method to DataFrame.
-    
-    Args:
-        df: DataFrame with potential missing values
-        method: Handling method (Delete rows, Mean, Median, Constant)
-        constant_value: Value for constant method
-        
-    Returns:
-        DataFrame after applying NA handling
-    """
-    # Create a copy to avoid modifying the original DataFrame
+    """Apply selected NA handling method to DataFrame."""
     df = df.copy()
     try:
         if method == "Delete rows":

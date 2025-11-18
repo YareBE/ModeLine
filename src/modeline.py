@@ -3,11 +3,13 @@ from data_uploader import upload_file
 from data_preprocess import (
     parameters_selection, na_handler, set_split, reset_downstream_selections
 )
-from model_trainer import LRTrainer
+from model_trainer import LRTrainer, predict
 from display_utils import (
     display_dataframe, visualize_results, plot_results, display_saved_models
 )
 from model_serializer import store_model
+import pandas as pd
+import numpy as np
 
 
 class Interface:
@@ -30,7 +32,9 @@ class Interface:
             "model": None,
             "model_name": None,
             "file": None,
-            "loaded_packet": None
+            "loaded_packet": None,
+            "prediction_result": None,
+            "prediction_inputs": {}
         }
 
         # Only initialize missing keys to preserve existing state
@@ -70,6 +74,7 @@ class Interface:
                     st.subheader("5️⃣ Split")
                     set_split()
 
+
     def render_main_content(self):
         """Render the main content area."""
         st.title("ModeLine")
@@ -79,6 +84,7 @@ class Interface:
         # Display loaded model instead of training workflow
         if st.session_state.loaded_packet is not None:
             display_saved_models()
+            predict()
             return
 
         # Display getting started guide
@@ -92,6 +98,7 @@ class Interface:
                 4. Handle missing values if any
                 5. Configure train/test split
                 6. Train your model and visualize it!
+                7. Make predictions with your trained model
             """)
             return
         
@@ -102,9 +109,6 @@ class Interface:
         if (st.session_state.processed_data is not None and
                 st.session_state.model is None):
             st.success("✅ Data ready for training!")
-            st.divider()
-            
-            # Create a centered train button when data is ready
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button(
@@ -124,6 +128,10 @@ class Interface:
             visualize_results()
 
             st.divider()
+            predict()
+
+
+            st.divider()
             st.subheader("Predictions Visualization")
 
             # Display scatter plots comparing predictions vs actual values
@@ -132,7 +140,6 @@ class Interface:
         # Store model section 
         # Always visible if model exists, independent of reruns
         if st.session_state.model is not None:
-            st.divider()
             store_model()
 
     def _train_model(self):
@@ -141,8 +148,8 @@ class Interface:
             # Extract features and target from processed data
             X = st.session_state.processed_data[st.session_state.features]
             y = st.session_state.processed_data[st.session_state.target]
-
-            # Configure split parameters based on dataset size
+            
+            # Train model
             if not st.session_state.trainset_only:
                 # Normal split: use user-configured train percentage and seed
                 train_ratio = st.session_state.train_size / 100
@@ -171,7 +178,10 @@ class Interface:
             # Generate and store a readable formula
             st.session_state.formula = trainer.get_formula()
 
-            # Celebrate successful training!
+            # Reset prediction state when new model is trained
+            st.session_state.prediction_result = None
+            st.session_state.prediction_inputs = {}
+
             st.balloons()
 
     def run(self):

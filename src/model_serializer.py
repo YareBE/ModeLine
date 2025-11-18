@@ -59,8 +59,8 @@ def store_model():
             type="primary",                   # Primary button styling
             use_container_width=True          # Full width button
         ):
-            st.success("✅ Everything went correctly!")
-    
+            st.success(f"✅ Model {filename} downloaded correctly!")
+
     except Exception as e:
         # Catch any errors during serialization or download preparation
         st.error(f"❌ Error: {str(e)}")

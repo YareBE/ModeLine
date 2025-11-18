@@ -2,7 +2,47 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
+import streamlit as st
+import numpy as np
 
+
+def predict():
+        """Compute predictions when there exists a model (created or loaded)"""
+
+        st.subheader("Predict with ModeLine")
+        st.markdown("##### Enter the input values for your prediction")
+
+        features = st.session_state.features or st.session_state.loaded_packet.get("features")
+        target = st.session_state.target or st.session_state.loaded_packet.get("target")
+
+        if not features or not target:
+            st.error("Features or target not found in session state")
+            return  
+        
+        model = st.session_state.get("model") or st.session_state.loaded_packet.get("model")
+        if model is None:
+            st.error("No model found. Train or load a model first")
+            return
+
+        inputs = np.array([
+            st.number_input(name, value=1.0, step=0.1, width=200) 
+            for name in features]).reshape(1, -1)
+
+        if st.button("PREDICT", type="primary"):
+            try:
+                prediction = model.predict(inputs)
+                    
+                st.markdown("#### Predicted Value:")
+                
+                # Display results
+                st.metric(
+                    label=f"Predicted {target}",
+                    value=f"{prediction[0][0]:,.3f}"
+                )
+                    
+                st.success("✅ Prediction completed successfully!")
+            except Exception as e:
+                st.error(f"Error making prediction: {str(e)}")
 
 class LRTrainer:
     """Linear Regression trainer with validation and evaluation."""
@@ -176,4 +216,16 @@ class LRTrainer:
             # Catch prediction or metric calculation errors
             raise RuntimeError(f"Error testing model: {str(e)}")
 
-    
+    def _split_dataset(self, X, y, train_size, split_seed):
+        """Split dataset into train and test sets."""
+        if self._test_available:
+            (self.X_train, self.X_test, self.y_train,
+             self.y_test) = train_test_split(
+                X, y, train_size=train_size, random_state=split_seed
+            )
+        else:
+            self.X_train, self.X_test, self.y_train, self.y_test = (
+                X, None, y, None
+            )
+
+ 
