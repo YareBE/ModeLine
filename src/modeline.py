@@ -4,12 +4,12 @@ from data_preprocess import (
     parameters_selection, na_handler, set_split, reset_downstream_selections
 )
 from model_trainer import LRTrainer, predict
-from display_utils import (
-    display_dataframe, visualize_results, plot_results, display_saved_models
+from display_utils import ( 
+            display_dataframe, visualize_results, plot_results
 )
-from model_serializer import store_model
-import pandas as pd
-import numpy as np
+from model_serializer import (
+            store_model, upload_model
+)
 
 
 class Interface:
@@ -83,7 +83,7 @@ class Interface:
 
         # Display loaded model instead of training workflow
         if st.session_state.loaded_packet is not None:
-            display_saved_models()
+            upload_model()
             predict()
             return
 
