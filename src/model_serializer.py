@@ -4,7 +4,26 @@ import joblib
 
 
 def store_model():
-    """Download trained model with metadata to joblib format."""
+    """Render UI to download the trained model and its metadata as joblib.
+
+    The function displays input controls for an optional description and a
+    filename. It packages the model object and metadata stored in
+    ``st.session_state`` into a single dictionary and serializes it to a
+    Joblib binary which is available via a Streamlit download button.
+
+    Side effects:
+                - Reads ``st.session_state`` keys such as ``model``, ``features``,
+                    ``target``, ``formula`` and ``metrics``.
+        - When the user clicks the download button, returns the serialized
+          bytes as a downloadable file.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: Any error during serialization or download preparation
+            is caught and displayed to the user via **st.error**.
+    """
     st.subheader("📦 Download Your Model")
 
     # Create a two column display for input fields
@@ -67,7 +86,20 @@ def store_model():
 
 
 def upload_model():
-    """Display loaded saved model information and metrics."""
+    """Render the UI for a previously loaded model packet.
+
+    The function reads the loaded packet from **st.session_state.loaded_packet**
+    and displays description, formula, feature/target configuration and
+    performance metrics in a human-friendly format.
+
+    Side effects:
+        - Reads **st.session_state.loaded_packet** and **st.session_state.model_name**.
+        - Renders multiple Streamlit components (headers, metrics, code blocks,
+          and lists) to present model metadata and performance.
+
+    Returns:
+        None
+    """
     col_title, col_badge = st.columns([3, 1])
     with col_title:
         st.header(f"{st.session_state.model_name}")
@@ -95,7 +127,7 @@ def upload_model():
         if packet.get("features"):
             with st.container(border=True):
                 for feat in packet["features"]:
-                    st.markdown(f"• `{feat}`")
+                    st.markdown(f"• *{feat}*")
         else:
             st.warning("No features information")
 
@@ -104,7 +136,7 @@ def upload_model():
         if packet.get("target"):
             with st.container(border=True):
                 target = packet["target"][0]
-                st.markdown(f"• `{target}`")
+                st.markdown(f"• *{target}*")
         else:
             st.warning("No target information")
 

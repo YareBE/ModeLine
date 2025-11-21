@@ -1,7 +1,7 @@
 import streamlit as st
 from data_uploader import upload_file
 from data_preprocess import (
-    parameters_selection, na_handler, set_split, reset_downstream_selections
+    parameters_selection, na_handler, set_split
 )
 from model_trainer import LRTrainer, predict
 from display_utils import ( 
@@ -13,14 +13,39 @@ from model_serializer import (
 
 
 class Interface:
-    """Main Streamlit application interface for ModeLine."""
+    """Main Streamlit application interface for ModeLine.
+
+    This class encapsulates the Streamlit UI layout and the workflow logic
+    for loading data, preprocessing, training a linear regression model,
+    visualizing results and serializing models. Persistent runtime state is
+    stored in **st.session_state**.
+
+    Attributes:
+        None: Persistent values are stored in **st.session_state** rather
+            than instance attributes so that Streamlit reruns preserve state.
+    """
 
     def __init__(self):
-        """Initialize the interface and session state."""
+        """Create an Interface and ensure Streamlit session state defaults.
+
+        The constructor calls **initialize_session_state** which sets
+        sensible defaults for required **st.session_state** keys if they are
+        not already present. This enables multiple reruns of the app without
+        losing user selections.
+        """
         self.initialize_session_state()
 
     def initialize_session_state(self):
-        """Initialize all required session state variables."""
+        """Populate missing keys in **st.session_state** with default values.
+
+        This method only sets keys that are absent so any existing user
+        selections remain intact across Streamlit reruns. Keys initialized
+        include dataset reference, selected features/target, processed data,
+        model object and other workflow controls.
+
+        Returns:
+            None
+        """
         defaults = {
             "df": None,
             "features": [],
@@ -43,7 +68,16 @@ class Interface:
                 st.session_state[key] = value
 
     def render_sidebar(self):
-        """Render the sidebar with workflow controls."""
+        """Render the Streamlit sidebar containing the workflow controls.
+
+        The sidebar includes steps to upload data, pick features/target,
+        handle missing values and configure the train/test split. Helpers
+        such as **upload_file** and **parameters_selection** are invoked and
+        will update **st.session_state** accordingly.
+
+        Returns:
+            None
+        """
         # 1. Data upload
         with st.sidebar:
             st.title("Workflow")
@@ -76,7 +110,16 @@ class Interface:
 
 
     def render_main_content(self):
-        """Render the main content area."""
+        """Render the main application area (data preview, training, results).
+
+        Behavior depends on the current **st.session_state**: if a model
+        packet has been loaded, the packet UI and prediction UI are shown.
+        Otherwise the function renders the data preview and, when the data
+        are ready, exposes the model training button and results panels.
+
+        Returns:
+            None
+        """
         st.title("ModeLine")
         st.header("Train and visualize linear regression models")
         st.divider()
@@ -143,7 +186,21 @@ class Interface:
             store_model()
 
     def _train_model(self):
-        """Train the linear regression model with current data."""
+        """Train a Linear Regression model using the current processed data.
+
+        This method extracts **X** and **y** from
+        **st.session_state.processed_data** using the user-selected column
+        names, configures the train/test split based on session settings and
+        uses **LRTrainer** to perform splitting, fitting and evaluation.
+
+        Side effects:
+            Writes trained **model**, evaluation **metrics**, predictions
+            (**y_train_pred**, **y_test_pred**), readable **formula** and
+            train/test subsets into **st.session_state**.
+
+        Returns:
+            None
+        """
         with st.spinner("Training model..."):
             # Extract features and target from processed data
             X = st.session_state.processed_data[st.session_state.features]
@@ -185,7 +242,15 @@ class Interface:
             st.balloons()
 
     def run(self):
-        """Run the main Streamlit application."""
+        """Configure Streamlit page and render the sidebar and main content.
+
+        This is the entry point for running the Streamlit app UI. It sets
+        the page configuration (title, layout) and delegates rendering to
+        **render_sidebar** and **render_main_content**.
+
+        Returns:
+            None
+        """
         st.set_page_config(
             page_title="ModeLine",
             layout="wide",
