@@ -14,7 +14,7 @@ def store_model():
     with col1:
         # Optional description to help users remember purpose and context
         description = st.text_area(
-            "Description (optional)",
+            "Description (optional but recommended)",
             placeholder='Example: "Model for predicting body weight"',
             height=80
         )
@@ -56,8 +56,8 @@ def store_model():
             data=buffer.getvalue(),           # Get bytes from buffer
             file_name=f"{filename}.joblib",   # Append .joblib extension
             mime="application/octet-stream",  # Binary file type
-            type="primary",                   # Primary button styling
-            use_container_width=True          # Full width button
+            type="primary",                 
+            use_container_width=True        
         ):
             st.success(f"✅ Model {filename} downloaded correctly!")
 

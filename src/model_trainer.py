@@ -23,24 +23,28 @@ def predict():
         if model is None:
             st.error("No model found. Train or load a model first")
             return
+        
+        columns = {}
+        #Inputs formatting
+        for i in range(len(st.session_state.features)):
+            if i % 4 == 0:
+                columns[str(i//4)] = st.columns(np.ones(4))
+        inputs = np.ones(len(st.session_state.features))
 
-        inputs = np.array([
-            st.number_input(name, value=1.0, step=0.1, width=200) 
-            for name in features]).reshape(1, -1)
+        for name in features:
+            index = features.index(name)
+            with columns[str(index//4)][index % 4]:
+                inputs[index] = st.number_input(name, value=1.0, step=0.1)
 
         if st.button("PREDICT", type="primary"):
             try:
+                inputs = np.array(inputs).reshape(1, -1)
                 prediction = model.predict(inputs)
-                    
-                st.markdown("#### Predicted Value:")
-                
+                     
                 # Display results
-                st.metric(
-                    label=f"Predicted {target}",
-                    value=f"{prediction[0][0]:,.3f}"
-                )
-                    
-                st.success("✅ Prediction completed successfully!")
+                st.markdown(f"#### Predicted {target[0]}: "
+                            f"{prediction[0][0]:,.3f}")
+
             except Exception as e:
                 st.error(f"Error making prediction: {str(e)}")
 

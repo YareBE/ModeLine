@@ -32,9 +32,7 @@ class Interface:
             "model": None,
             "model_name": None,
             "file": None,
-            "loaded_packet": None,
-            "prediction_result": None,
-            "prediction_inputs": {}
+            "loaded_packet": None
         }
 
         # Only initialize missing keys to preserve existing state
@@ -78,7 +76,7 @@ class Interface:
     def render_main_content(self):
         """Render the main content area."""
         st.title("ModeLine")
-        st.header("Train and visualize linear regression models")
+        st.header("Train, visualize and predict with linear regression models")
         st.divider()
 
         # Display loaded model instead of training workflow
@@ -89,16 +87,17 @@ class Interface:
 
         # Display getting started guide
         if st.session_state.df is None:
-            st.info("👈 Upload a dataset using the sidebar")
+            st.info("👈 Upload a dataset/model using the sidebar")
             st.markdown("""
                 ### Getting Started
-                1. Upload dataset (CSV, Excel, SQLite)
-                2. Select features (numeric only)
+                1. Upload dataset (CSV, Excel, SQLite) or model (joblib)
+                2. Select features (numeric)
                 3. Choose target variable (numeric)
                 4. Handle missing values if any
-                5. Configure train/test split
-                6. Train your model and visualize it!
-                7. Make predictions with your trained model
+                5. Configure train/test split and seed
+                6. Train your model and visualize it
+                7. Make predictions with your trained or uploaded model
+                8. Save it in your device (if desired)
             """)
             return
         
@@ -129,7 +128,6 @@ class Interface:
 
             st.divider()
             predict()
-
 
             st.divider()
             st.subheader("Predictions Visualization")
