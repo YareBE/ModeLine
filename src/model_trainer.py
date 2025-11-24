@@ -26,10 +26,10 @@ def predict():
         
         columns = {}
         #Inputs formatting
-        for i in range(len(st.session_state.features)):
+        for i in range(len(features)):
             if i % 4 == 0:
                 columns[str(i//4)] = st.columns(np.ones(4))
-        inputs = np.ones(len(st.session_state.features))
+        inputs = np.ones(len(features))
 
         for name in features:
             index = features.index(name)
