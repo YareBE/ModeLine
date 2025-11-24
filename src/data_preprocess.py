@@ -2,7 +2,19 @@ import streamlit as st
 
 
 def reset_downstream_selections(level):
-    """Reset session state variables depending on upstream choices."""
+    """Reset downstream session state variables when upstream choices change.
+
+    This function resets Streamlit ``st.session_state`` keys that depend on
+    earlier steps of the workflow. The granularity of the reset is
+    controlled by the ``level`` parameter: lower levels perform broader
+    resets.
+
+    Args:
+        level (int): Reset granularity. Typical values:
+            - 1: Reset dataset, features and target selections.
+            - 2: Additionally reset processed data and NA method.
+            - 3: Additionally reset description and model.
+    """
     if level <= 1:
         # Completely reset the session_state when the dataset changes
         keys_to_reset = ["features", "target", "df"]
@@ -22,18 +34,54 @@ def reset_downstream_selections(level):
 
 @st.cache_data(show_spinner=False)
 def get_numeric_columns(df):
-    """Get numeric columns from DataFrame."""
+    """Return the list of numeric column names from a DataFrame.
+
+    Args:
+        df (pandas.DataFrame): Input DataFrame to inspect.
+
+    Returns:
+        list: Column names of numeric dtype.
+    """
     return df.select_dtypes(include=['number']).columns.tolist()
 
 
 def get_na_info(df):
-    """Get columns with missing values."""
+    """Return a list of columns that contain missing values.
+
+    Args:
+        df (pandas.DataFrame): Input DataFrame to inspect.
+
+    Returns:
+        list: Column names that have at least one NA value.
+    """
     cols_with_na = df.columns[df.isna().any()].tolist()
     return cols_with_na
 
 
 def apply_na_handling(df, method, constant_value=None):
-    """Apply selected NA handling method to DataFrame."""
+    """Apply a missing-value handling strategy to a DataFrame subset.
+
+    The function copies the provided DataFrame and applies one of the
+    available strategies: deleting rows with any NA, filling numeric
+    columns with the mean or median, or filling all NAs with a provided
+    constant numeric value.
+
+    Args:
+        df (pandas.DataFrame): DataFrame to process (a copy is returned).
+        method (str): One of **"Delete rows"**, **"Mean"**, **"Median"**,
+            or **"Constant"**. If the method is not recognized the original
+            DataFrame is returned unchanged.
+        constant_value (Optional[object]): When **method == "Constant"**, the
+            provided value will be converted to **float** and used to fill NAs.
+
+    Returns:
+        pandas.DataFrame: Processed DataFrame after NA handling.
+
+    Raises:
+        ValueError: If **method == "Constant"** but **constant_value** is not
+            numeric-convertible.
+        RuntimeError: If an unexpected error occurs during processing.
+    """
     df = df.copy()
     try:
         if method == "Delete rows":
@@ -62,7 +110,18 @@ def apply_na_handling(df, method, constant_value=None):
 
 
 def _dataset_info(df):
-    """Display dataset info and return numeric columns."""
+    """Display basic dataset info in the Streamlit UI and return numeric columns.
+
+    This helper renders basic metrics (rows/columns), warns about missing
+    values and very small datasets, and returns the list of numeric columns
+    available for modeling.
+
+    Args:
+        df (pandas.DataFrame): Dataset to inspect and display.
+
+    Returns:
+        list: Names of numeric columns found in **df**.
+    """
     available_columns = get_numeric_columns(df)
     cols_with_na = get_na_info(df)
 
@@ -73,7 +132,7 @@ def _dataset_info(df):
     
     # Show warning of missing values
     if cols_with_na:
-        # Limit the list of the first 3 columns to not saturate the UI
+        # Limit the list of the first 3 columns to avoid saturating the UI
         na_list = ', '.join(cols_with_na[:3])
         suffix = ' ...' if len(cols_with_na) > 3 else ''
         st.caption(f"**Columns with NA values:** {na_list}{suffix}")
@@ -91,7 +150,16 @@ def _dataset_info(df):
 
 
 def parameters_selection(df):
-    """Handle feature and target selection from numeric columns."""
+    """Render UI controls in Streamlit to select features and target.
+
+    This function relies on Streamlit session state to store the selected
+    **features** and **target**. It shows dataset info, then two subsections to
+    pick training features and the target variable (numeric-only).
+
+    Args:
+        df (pandas.DataFrame): Loaded dataset used to determine available
+            numeric columns and display dataset metrics.
+    """
     available_columns = _dataset_info(df)
 
     # Section to select the features
@@ -99,7 +167,7 @@ def parameters_selection(df):
     _features_selection(available_columns)
     st.divider()
 
-    # Section to select the target 
+    # Section to select the target
     st.subheader("3️⃣ Target")
     _target_selection(available_columns)
 
@@ -110,7 +178,14 @@ def parameters_selection(df):
 
 
 def _features_selection(available_columns):
-    """Handle feature selection UI."""
+    """Render the feature selection control in the sidebar.
+
+    Args:
+        available_columns (list): List of numeric column names available for
+            selection. The currently selected target (if any) is excluded from
+            the options to avoid choosing the same column as both feature and
+            target.
+    """
     st.multiselect(
         "Training Features (Numeric)",
         # Exclude the actual target from the options
@@ -124,7 +199,13 @@ def _features_selection(available_columns):
 
 
 def _target_selection(available_columns):
-    """Handle target variable selection UI."""
+    """Render the target variable selection control in the sidebar.
+
+    Args:
+        available_columns (list): List of numeric column names available for
+            selection. Already-selected features are excluded from the target
+            options.
+    """
     # Exclude the selected features
     target_options = [col for col in available_columns
                       if col not in st.session_state.features]
@@ -145,8 +226,17 @@ def _target_selection(available_columns):
         key="target"
     )
 
+
 def na_handler():
-    """Handle missing values in selected features and target."""
+    """Provide UI to inspect and handle missing values for selected subset.
+
+    The function extracts the current selection of features and target from
+    ``st.session_state`` and reports the total number of missing values. If
+    missing values are present and have not been processed yet, the user is
+    offered several strategies (delete rows, mean, median, constant) to
+    handle them. The processed result is saved to
+    ``st.session_state.processed_data``.
+    """
     # Extract just the selected columns (features + target)
     selected_data = st.session_state.df[
         st.session_state.features + st.session_state.target
@@ -184,7 +274,7 @@ def na_handler():
                 processed = apply_na_handling(
                     selected_data, na_method, constant_value
                 )
-                # Just save if there are still data after processing 
+                # Just save if there are still data after processing
                 if not processed.empty:
                     st.session_state.processed_data = processed
                 # Rerun the app after updating the UI
@@ -199,7 +289,14 @@ def na_handler():
 
 
 def set_split():
-    """Configure train/test split ratio and display split info."""
+    """Render controls for train/test split and display split metrics.
+
+    The function uses **st.session_state.processed_data** to compute the
+    number of rows assigned to training and testing according to the
+    configured **st.session_state.train_size** and optionally the seed. For
+    very small datasets a 100% training split is enforced and flagged via
+    **st.session_state.trainset_only**.
+    """
     df = st.session_state.processed_data
     
     # If the dataset is not too small, allow split configuration

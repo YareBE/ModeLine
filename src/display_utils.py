@@ -4,7 +4,20 @@ import plotly.graph_objects as go
 
 
 def display_dataframe():
-    """Display DataFrame preview with row range selection."""
+    """Render a preview of the active DataFrame with a selectable row window.
+
+    The function displays a slice of **st.session_state.df** and, if
+    **st.session_state.processed_data** exists, substitutes the selected
+    features/target columns with the processed values. It offers a
+    100-row-window selector to avoid rendering very large tables.
+
+    Side effects:
+        Reads from **st.session_state** keys: **df**, **processed_data**,
+        **features**, **target** and writes to the Streamlit UI.
+
+    Returns:
+        None: The UI is rendered directly via Streamlit.
+    """
     df = st.session_state.df.copy()
     processed_data = st.session_state.processed_data
 
@@ -44,7 +57,16 @@ def display_dataframe():
 
 
 def style_dataframe(df, features, target):
-    """Apply styling to highlight features and target columns."""
+    """Return a pandas Styler that highlights feature and target columns.
+
+    Args:
+        df (pandas.DataFrame): DataFrame slice to style.
+        features (list): List of column names considered features.
+        target (list): List (usually length 1) of column name considered target.
+
+    Returns:
+        pandas.io.formats.style.Styler: Styled DataFrame for display.
+    """
     def highlight_columns(col):
         # Apply a subtle blue for features, light red for targets
         if col.name in features:
@@ -58,14 +80,24 @@ def style_dataframe(df, features, target):
 
 
 def visualize_results():
-    """Display model performance metrics and results."""
+    """Render trained model performance metrics and the model formula.
+
+    Reads the trained model and metrics from **st.session_state** and
+    displays R² and MSE for training and, when available, test sets. If the
+    app is running with a loaded model packet, metrics and formula are also
+    shown via the packet contents.
+
+    Returns:
+        None: UI elements are rendered in Streamlit.
+    """
     if st.session_state.model is not None:
         # Use st.markdown with HTML to personalize the size of the text
         st.markdown(
-            f"<p style='text-indent: 30px;'>"
-            f"<span style='font-size:20px; color:blue;'>"
-            f"{st.session_state.formula}</span></p>", 
-                unsafe_allow_html=True)
+            "<p style='text-indent: 30px;'>"
+            "<span style='font-size:20px; color:blue;'>"
+            f"{st.session_state.formula}</span></p>",
+            unsafe_allow_html=True,
+        )
 
         # Split UI into two columns: training and test metrics
         st.subheader("Performance Metrics")
@@ -93,7 +125,23 @@ def visualize_results():
 
 
 def plot_results():
-    """Create interactive visualizations of predictions vs actual values."""
+    """Create interactive Plotly visualizations comparing predictions and
+    actual target values.
+
+    Depending on the number of features, the function will create:
+        - A default Actual vs Predicted scatter plot.
+        - A 2D regression line plot for single-feature models.
+        - A 3D surface plot for two-feature models (regression plane).
+
+    The function expects several keys to be present in **st.session_state**
+    (**X_train**, **X_test**, **y_train**, **y_test**, **y_train_pred**,
+    **y_test_pred**, and **model**) and will raise a **ValueError** if the
+    model or predictions are missing.
+
+    Returns:
+        None: Interactive charts are rendered using Streamlit's Plotly
+        integration.
+    """
     # Extract session state
     X_train = st.session_state.X_train
     X_test = st.session_state.X_test
@@ -113,46 +161,74 @@ def plot_results():
     # Save the number of features
     n_features = X_train.shape[1]
 
-    #try:
-    # Create default plot
-    def_fig = _create_default_plot(
-        y_train, y_train_pred, y_test, y_test_pred
-    )
-    st.plotly_chart(def_fig, use_container_width=True)
-    st.divider()
-
-    # Create specialized plots for 1 or 2 features
-    if n_features == 1:
-        fig = _create_1d_plot(X_train, X_test, y_train, y_test,
-                              y_train_pred, model)
-        st.plotly_chart(fig, use_container_width=True)
-        st.divider()
-    elif n_features == 2:
-        fig = _create_3d_plot(X_train, X_test, y_train, y_test, model)
-        st.plotly_chart(fig, use_container_width=True)
+    try:
+        # Create default plot
+        def_fig = _create_default_plot(
+            y_train, y_train_pred, y_test, y_test_pred
+        )
+        st.plotly_chart(def_fig, use_container_width=True)
         st.divider()
 
-    #except Exception as e:
-    #    raise RuntimeError(f"Error plotting results: {str(e)}")
+        # Create specialized plots for 1 or 2 features
+        if n_features == 1:
+            fig = _create_1d_plot(X_train, X_test, y_train, y_test,
+                                y_train_pred, model)
+            st.plotly_chart(fig, use_container_width=True)
+            st.divider()
+        elif n_features == 2:
+            fig = _create_3d_plot(X_train, X_test, y_train, y_test, model)
+            st.plotly_chart(fig, use_container_width=True)
+            st.divider()
+
+    except Exception as e:
+        raise RuntimeError(f"Error plotting results: {str(e)}")
+
 
 # Aux function for creating the plots
 def make_trace(x, y, name, color, size=5, opacity=0.5, symbol=None):
+    """Create a Plotly Scattergl trace for 2D scatter plots.
+
+    Args:
+        x (array-like): X values for the scatter trace.
+        y (array-like): Y values for the scatter trace.
+        name (str): Trace name shown in the legend.
+        color (str): Marker color (hex or named color).
+        size (int, optional): Marker size. Defaults to 5.
+        opacity (float, optional): Marker opacity between 0 and 1.
+        symbol (str, optional): Marker symbol name (e.g., 'x'). Defaults to None.
+
+    Returns:
+        plotly.graph_objects.Scattergl: Configured scatter trace.
+    """
     return go.Scattergl(
         x=x, y=y, mode='markers', name=name,
         marker=dict(size=size, color=color, opacity=opacity, symbol=symbol)
-    ) 
+    )
+
 
 def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
-    """Create actual vs predicted scatter plot."""
+    """Create an Actual vs Predicted scatter plot using Plotly.
+
+    Args:
+        y_train (pandas.DataFrame): True training target values.
+        y_train_pred (array-like): Predicted values for the training set.
+        y_test (pandas.DataFrame or None): True test target values or None.
+        y_test_pred (array-like or None): Predicted test values or None.
+
+    Returns:
+        plotly.graph_objects.Figure: Configured scatter figure.
+    """
     def_fig = go.Figure()
 
     y_train_pred = y_train_pred.ravel()
     y_train = y_train.values.ravel()
     
-    def_fig.add_trace(make_trace(
-        y_train, y_train_pred,
-        name='Train', size=5, color='#2E86AB', opacity=0.5
-    ))
+    def_fig.add_trace(
+        make_trace(
+            y_train, y_train_pred,
+            name='Train', size=5, color='#2E86AB', opacity=0.5
+        )
+    )
 
     all_values = np.concatenate([y_train, y_train_pred])
 
@@ -161,10 +237,13 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
         y_test_pred = y_test_pred.ravel()
         y_test = y_test.values.ravel()
 
-        def_fig.add_trace(make_trace(
-            y_test, y_test_pred, 
-            name='Test', size=6, color='#A23B72', opacity=0.6, symbol='x'
-        ))
+        def_fig.add_trace(
+            make_trace(
+                y_test, y_test_pred,
+                name='Test', size=6, color='#A23B72', opacity=0.6,
+                symbol='x'
+            )
+        )
 
         all_values = np.concatenate([all_values, y_test, y_test_pred])
 
@@ -174,12 +253,14 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
     min_val -= margin
     max_val += margin
 
-    def_fig.add_trace(go.Scattergl(
-        x=[min_val, max_val], y=[min_val, max_val],
-        mode='lines',
-        name='Perfect',
-        line=dict(color='black', width=2, dash='dash')
-    ))
+    def_fig.add_trace(
+        go.Scattergl(
+            x=[min_val, max_val], y=[min_val, max_val],
+            mode='lines',
+            name='Perfect',
+            line=dict(color='black', width=2, dash='dash')
+        )
+    )
 
     def_fig.update_layout(
         title='Actual vs Predicted Values',
@@ -194,7 +275,19 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
 
 
 def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
-    """Create 2D regression plot for single feature."""
+    """Create a 2D regression plot for models with a single feature.
+
+    Args:
+        X_train (pandas.DataFrame): Training features (single column).
+        X_test (pandas.DataFrame or None): Test features or None.
+        y_train (pandas.DataFrame): Training target values.
+        y_test (pandas.DataFrame or None): Test target values or None.
+        y_train_pred (array-like): Predictions for the training set.
+        model: Trained model instance implementing **predict**.
+
+    Returns:
+        plotly.graph_objects.Figure: 2D scatter+regression line figure.
+    """
     x_train = X_train.iloc[:, 0].to_numpy()
     y_train_vals = y_train.iloc[:, 0].to_numpy()
 
@@ -236,7 +329,21 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
 
 
 def _create_3d_plot(X_train, X_test, y_train, y_test, model):
-    """Create 3D regression plot for two features."""
+    """Create a 3D regression visualization (two features -> target).
+
+    The function plots training (and test, if present) points in 3D and
+    overlays the regression plane predicted by the fitted model.
+
+    Args:
+        X_train (pandas.DataFrame): Training features (two columns).
+        X_test (pandas.DataFrame or None): Test features or None.
+        y_train (pandas.DataFrame): Training target values.
+        y_test (pandas.DataFrame or None): Test target values or None.
+        model: Trained model instance implementing **predict** for 2D inputs.
+
+    Returns:
+        plotly.graph_objects.Figure: 3D scatter and surface figure.
+    """
     
     def make_trace(x, y, z, name, color, size=3, opacity=0.7, symbol=None):
         return go.Scatter3d(

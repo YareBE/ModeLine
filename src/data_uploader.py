@@ -5,7 +5,20 @@ import joblib
 
 
 def upload_file():
-    """Load dataset or previously saved model from file."""
+    """Load a dataset or a previously saved model from an uploaded file.
+
+    This helper is intended to be used within a Streamlit app. The function
+    renders a ``st.file_uploader`` control and loads the provided file based
+    on its extension. Supported formats include CSV, Excel, SQLite databases
+    and serialized Joblib packets containing a saved model.
+
+    Side effects:
+        - Updates keys in ``st.session_state`` such as ``df``,
+          ``loaded_packet``, ``model_name`` and ``file``.
+
+    Returns:
+        None: Results are stored into ``st.session_state`` for downstream use.
+    """
     uploaded_file = st.file_uploader(
         "Upload your dataset or a previously saved model",
         type=["csv", "xls", "xlsx", "db", "sqlite", "joblib"],
@@ -39,9 +52,7 @@ def upload_file():
                     return None
                 # Store DataFrame in session state
                 st.session_state.df = df
-                st.success(
-                    f"✅ Dataset correctly loaded."
-                )
+                st.success("✅ Dataset correctly loaded.")
         else:
             # Handle model files (Joblib)
             with st.spinner("Loading data..."):
@@ -52,18 +63,33 @@ def upload_file():
                     st.session_state.model_name = (
                         uploaded_file.name.replace('.joblib', '')
                     )
-                    st.success(f"✅ Model correctly loaded.")
+                    st.success("✅ Model correctly loaded.")
                 except Exception as e:
                     st.error(f"Error loading model: {str(e)}")
 
 
 @st.cache_data(show_spinner=False)
 def _error_handler(file, extension):
-    """Load file based on extension and handle errors."""
+    """Dispatch file reading based on extension and handle common errors.
+
+    This function reads the uploaded ``file`` using the appropriate helper
+    depending on the detected ``extension``. For SQLite files, an in-memory
+    SQLite connection is used to deserialize the content.
+
+    Args:
+        file (io.BufferedIOBase): Uploaded file-like object (Streamlit
+            upload provides this).
+        extension (str): File extension token (e.g. 'csv', 'xlsx', 'db').
+
+    Returns:
+        pandas.DataFrame: Loaded DataFrame (may be empty on read errors).
+
+    Raises:
+        ValueError: When an unsupported extension is passed.
+    """
     # Reset file pointer to ensure full file is read
     file.seek(0)
     conn = None
-    
     try:
         # Route to appropriate loader based on extension
         if extension == 'csv':
@@ -96,7 +122,17 @@ def _error_handler(file, extension):
 
 
 def _upload_csv(file):
-    """Read CSV file and normalize column names."""
+    """Read a CSV file into a DataFrame and normalize its column names.
+
+    Args:
+        file (io.BufferedIOBase): File-like object positioned at start.
+
+    Returns:
+        pandas.DataFrame: Parsed CSV content with stringified column names.
+
+    Raises:
+        ValueError: If the CSV is empty or cannot be parsed.
+    """
     try:
         data = pd.read_csv(file)
         # Convert all column names to strings (handles numeric/mixed types)
@@ -117,7 +153,18 @@ def _upload_csv(file):
 
 
 def _upload_excel(file):
-    """Read Excel file and normalize column names."""
+    """Read an Excel file into a DataFrame using ``openpyxl`` engine.
+
+    Args:
+        file (io.BufferedIOBase): File-like object representing the Excel
+            workbook.
+
+    Returns:
+        pandas.DataFrame: Parsed sheet (first sheet) with string column names.
+
+    Raises:
+        ValueError: If there is any problem reading the Excel file.
+    """
     try:
         # Use openpyxl engine for modern Excel format support
         data = pd.read_excel(file, engine='openpyxl')
@@ -130,7 +177,24 @@ def _upload_excel(file):
 
 
 def _upload_sql(file, conn):
-    """Read SQLite file and normalize column names."""
+    """Load a SQLite database file into a DataFrame by reading the first table.
+
+    The provided ``conn`` must be an in-memory sqlite3 connection. The
+    function calls ``conn.deserialize`` using the uploaded file bytes to
+    populate the in-memory database and then reads the first available table
+    into a pandas DataFrame.
+
+    Args:
+        file (io.BufferedIOBase): Uploaded SQLite file-like object.
+        conn (sqlite3.Connection): In-memory connection instance used to
+            deserialize the database contents.
+
+    Returns:
+        pandas.DataFrame: Contents of the first table in the database.
+
+    Raises:
+        ValueError: If the database contains no tables or cannot be read.
+    """
     try:
         # Load SQLite file content into in-memory database
         conn.deserialize(file.read())
