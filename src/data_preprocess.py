@@ -33,7 +33,7 @@ def reset_downstream_selections(level):
 
 
 @st.cache_data(show_spinner=False)
-def get_numeric_columns(df):
+def get_numeric_columns(df): ##
     """Return the list of numeric column names from a DataFrame.
 
     Args:
@@ -44,8 +44,8 @@ def get_numeric_columns(df):
     """
     return df.select_dtypes(include=['number']).columns.tolist()
 
-
-def get_na_info(df):
+@st.cache_data(show_spinner=False)
+def get_na_info(df): ##
     """Return a list of columns that contain missing values.
 
     Args:
@@ -57,8 +57,8 @@ def get_na_info(df):
     cols_with_na = df.columns[df.isna().any()].tolist()
     return cols_with_na
 
-
-def apply_na_handling(df, method, constant_value=None):
+@st.cache_data(show_spinner=False)
+def apply_na_handling(df, method, constant_value=None): ##
     """Apply a missing-value handling strategy to a DataFrame subset.
 
     The function copies the provided DataFrame and applies one of the

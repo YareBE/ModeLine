@@ -5,10 +5,10 @@ from data_preprocess import (
 )
 from model_trainer import LRTrainer, predict
 from display_utils import ( 
-            display_dataframe, visualize_results, plot_results
+            display_dataframe, visualize_results, plot_results, display_uploaded_model
 )
 from model_serializer import (
-            store_model, upload_model
+            store_model
 )
 
 

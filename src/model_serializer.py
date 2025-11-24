@@ -32,10 +32,11 @@ def store_model():
     # Column 1: Description text area
     with col1:
         # Optional description to help users remember purpose and context
-        description = st.text_area(
+        st.text_area(
             "Description (optional but recommended)",
             placeholder='Example: "Model for predicting body weight"',
-            height=80
+            height=80, 
+            key = "description"
         )
     
     # Column 2: Filename input
@@ -51,24 +52,9 @@ def store_model():
         st.error("❌ File name cannot be empty!")
         return
 
-    try:
-        # Build model packet dictionary with all relevant data
-        # This allows the model to be loaded and used independently
-        packet = {
-            "model": st.session_state.model,        # Trained model object
-            "description": description,             # User-provided description
-            "features": st.session_state.features,  # List of feature column names
-            "target": st.session_state.target,      # Target variable names
-            "formula": st.session_state.formula,    # Model formula string
-            "metrics": st.session_state.metrics     # Dict with performance metrics
-        }
-        
-        # Use in-memory buffer to avoid writing to disk
-        buffer = io.BytesIO()
-        joblib.dump(packet, buffer)
-        # Reset buffer position to beginning for reading
-        buffer.seek(0)
-        
+    try:    
+        buffer = _packet_creation(st.session_state.model, st.session_state.description, st.session_state.features, 
+                    st.session_state.target, st.session_state.formula, st.session_state.metrics)
         # Create download button with serialized data
         if st.download_button(
             label="⬇️ DOWNLOAD MODEL",
@@ -84,88 +70,21 @@ def store_model():
         # Catch any errors during serialization or download preparation
         st.error(f"❌ Error: {str(e)}")
 
-
-def upload_model():
-    """Render the UI for a previously loaded model packet.
-
-    The function reads the loaded packet from **st.session_state.loaded_packet**
-    and displays description, formula, feature/target configuration and
-    performance metrics in a human-friendly format.
-
-    Side effects:
-        - Reads **st.session_state.loaded_packet** and **st.session_state.model_name**.
-        - Renders multiple Streamlit components (headers, metrics, code blocks,
-          and lists) to present model metadata and performance.
-
-    Returns:
-        None
-    """
-    col_title, col_badge = st.columns([3, 1])
-    with col_title:
-        st.header(f"{st.session_state.model_name}")
-
-    packet = st.session_state.loaded_packet
-
-    # Description (optional)
-    st.subheader("Description")
-    if packet.get("description"):
-        st.info(packet["description"])
-    else:
-        st.warning("No description provided")
-
-    # Formula / code string (optional)
-    if packet.get("formula"):
-        st.subheader("Formula")
-        st.code(packet["formula"], language="python")
-
-    # Features and target information
-    st.subheader("Model Configuration")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**Features:**")
-        if packet.get("features"):
-            with st.container(border=True):
-                for feat in packet["features"]:
-                    st.markdown(f"• *{feat}*")
-        else:
-            st.warning("No features information")
-
-    with col2:
-        st.markdown("**Target:**")
-        if packet.get("target"):
-            with st.container(border=True):
-                target = packet["target"][0]
-                st.markdown(f"• *{target}*")
-        else:
-            st.warning("No target information")
-
-    # Performance metrics section
-    st.divider()
-    st.subheader("Performance Metrics")
-
-    if packet.get("metrics"):
-        metrics = packet["metrics"]
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("#### Training Set")
-            if metrics.get("train"):
-                metrics_train = metrics["train"]
-                st.metric("R² Score", f"{metrics_train['r2']:.4f}")
-                st.metric("MSE", f"{metrics_train['mse']:.4f}")
-            else:
-                st.warning("No training metrics")
-
-        with col2:
-            st.markdown("#### Test Set")
-            if metrics.get("test"):
-                metrics_test = metrics["test"]
-                st.metric("R² Score", f"{metrics_test['r2']:.4f}")
-                st.metric("MSE", f"{metrics_test['mse']:.4f}")
-            else:
-                st.warning("No test set metrics")
-    else:
-        st.warning("No metrics information available")
-
-    st.divider()
+def _packet_creation(model, description, features, target, formula, metrics): ##
+    # Build model packet dictionary with all relevant data
+    # This allows the model to be loaded and used independently
+    packet = {
+            "model": model,        # Trained model object
+            "description": description, # User-provided description
+            "features": features,  # List of feature column names
+            "target": target,      # Target variable names
+            "formula": formula,    # Model formula string
+            "metrics": metrics     # Dict with performance metrics
+        }
+        
+    # Use in-memory buffer to avoid writing to disk
+    buffer = io.BytesIO()
+    joblib.dump(packet, buffer)
+    # Reset buffer position to beginning for reading
+    buffer.seek(0)
+    return buffer
