@@ -1,0 +1,26 @@
+PLAN DE PRUEBAS FUNCIONALES MODELINE
+
+1-CARGADO DE MODELOS:
+-En todo momento el usuario puede volver a cargar otro archivo-
+
+a.Cargar archivo corrupto o vacío  -> muestra error que el usuario entienda 
+
+b.Carga dataset válido pero pequeño (MENOS de 10 filas) -> todo funciona correctamente pero no se lleva
+a cabo el splitting ni se muestran/guardan métricas con respecto al test (porque no existe) y se le 
+informa al usuario de que no tiene suficiente información. Lo mismo al cargar dicho modelo como joblib, todo 
+funciona correctamente pero sin la parte de test.
+
+c.Se muestran los datos correctos en Dataset Info
+
+d.Carga dataset/archivo joblib válido y grande -> Se cumplen los próximos requisitos
+
+
+2-SELECCIÓN DE VARIABLES:
+
+a.Correcto funcionamiento de flujo de selección de features/target:
+-No aparecen variables seleccionadas en la otra lista de selección.
+-Se pintan las columnas del dataframe del main content acorde a los cambios que se hacen
+en features/target y no hay problemas aunque se cambie el window de rows displayed.
+-
+
+
