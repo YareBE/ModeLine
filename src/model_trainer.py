@@ -40,38 +40,38 @@ def predict():
         or st.session_state.loaded_packet.get("target")
     )
 
-        if not features or not target:
-            st.error("Features or target not found in session state")
-            return  
-        
-        model = st.session_state.get("model") or st.session_state.loaded_packet.get("model")
-        if model is None:
-            st.error("No model found. Train or load a model first")
-            return
-        
-        columns = {}
-        #Inputs formatting
-        for i in range(len(features)):
-            if i % 4 == 0:
-                columns[str(i//4)] = st.columns(np.ones(4))
-        inputs = np.ones(len(features))
+    if not features or not target:
+        st.error("Features or target not found in session state")
+        return  
+    
+    model = st.session_state.get("model") or st.session_state.loaded_packet.get("model")
+    if model is None:
+        st.error("No model found. Train or load a model first")
+        return
+    
+    columns = {}
+    #Inputs formatting
+    for i in range(len(features)):
+        if i % 4 == 0:
+            columns[str(i//4)] = st.columns(np.ones(4))
+    inputs = np.ones(len(features))
 
-        for name in features:
-            index = features.index(name)
-            with columns[str(index//4)][index % 4]:
-                inputs[index] = st.number_input(name, value=1.0, step=0.1)
+    for name in features:
+        index = features.index(name)
+        with columns[str(index//4)][index % 4]:
+            inputs[index] = st.number_input(name, value=1.0, step=0.1)
 
-        if st.button("PREDICT", type="primary"):
-            try:
-                inputs = np.array(inputs).reshape(1, -1)
-                prediction = model.predict(inputs)
-                     
-                # Display results
-                st.markdown(f"#### Predicted {target[0]}: "
-                            f"{prediction[0][0]:,.3f}")
+    if st.button("PREDICT", type="primary"):
+        try:
+            inputs = np.array(inputs).reshape(1, -1)
+            prediction = model.predict(inputs)
+                    
+            # Display results
+            st.markdown(f"#### Predicted {target[0]}: "
+                        f"{prediction[0][0]:,.3f}")
 
-            except Exception as e:
-                st.error(f"Error making prediction: {str(e)}")
+        except Exception as e:
+            st.error(f"Error making prediction: {str(e)}")
 
 class LRTrainer:
     """Linear Regression trainer with validation, splitting and evaluation.
