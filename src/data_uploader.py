@@ -102,12 +102,18 @@ def _upload_csv(file):
         # Convert all column names to strings (handles numeric/mixed types)
         data.columns = data.columns.map(str)
         return data
+    except UnicodeDecodeError:
+        # pd.read_csv expects a UTF-8 by default
+        file.seek(0)
+        return pd.read_csv(file, encoding='latin-1')
     except pd.errors.EmptyDataError:
         # Specific error for empty CSV files
         raise ValueError("CSV file is empty")
     except pd.errors.ParserError as e:
         # Parsing errors (malformed CSV, encoding issues, etc.)
         raise ValueError(f"Error parsing CSV: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Error reading csv file {str(e)}")
 
 
 def _upload_excel(file):
