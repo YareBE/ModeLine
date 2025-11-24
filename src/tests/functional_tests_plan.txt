@@ -14,6 +14,8 @@ c.Se muestran los datos correctos en Dataset Info
 
 d.Carga dataset/archivo joblib válido y grande -> Se cumplen los próximos requisitos
 
+e.Comprobar este punto con varios datasets de HuggingFace(probar en español para el encoding también)
+
 
 2-SELECCIÓN DE VARIABLES:
 
@@ -21,6 +23,50 @@ a.Correcto funcionamiento de flujo de selección de features/target:
 -No aparecen variables seleccionadas en la otra lista de selección.
 -Se pintan las columnas del dataframe del main content acorde a los cambios que se hacen
 en features/target y no hay problemas aunque se cambie el window de rows displayed.
--
+-No se permite seleccionar si ya no quedan variables libres.
+-Sólo numéricas
+-Experiencia fluida 
+
+b.Cualquier cambio en variables resetea todos lo cambios más "abajo" en el flujo
+(ya sea splitting, seed, o incluso entrenar el modelo de nuevo)
+
+3-MANEJO DE NULOS
+
+a.Todas las opciones posibles funcionan correctamente y se ven reflejados lo cambios 
+en el dataframe del main content 
+
+b.Un cambio en features/target resetea correctamente el dataframe y permite volver a manejar 
+los NA's desde 0.
+
+c.Se devuelve un feedback (positivo o negativo) al usuario tras el preprocesado.
+
+4-SEMILLA Y SPLIT
+
+a.Comprobar con las mismas variables y semilla y split, si se devuelven los mismos resultados
+en 2 ocasiones distintas. Después ir cambiando la semilla y porcentaje de split para ver 
+si da resultados distintos pero no muy diferentes en métricas. 
+
+b.Cualquier cambio en semilla/split percentage resetea todos lo cambios más "abajo" en el flujo
+
+c.En datasets pequeños sólo es posible modificar la semilla 
+
+5-CREACIÓN Y VISUALIZACIÓN DEL MODELO 
+
+a.Tanto la fórmula, como las métricas y las gráficas son coherentes entre sí y con 
+el dataframe en cuestión.
+
+b.Para modelos con 1 o 2 features, a parte de la gráfica predicted vs actual, se muestran 
+los gráficos de regresión con los puntos de test o train (2D y 3D respectivamente).
+
+6-PREDICCIONES 
+
+a.Probar varias predicciones y que dan el resultado correcto basándose en la fórmula 
+(Ejemplo, todas las features a 0 -> devuelve el bias)
+
+b.Probar tanto con un modelo recién creado como con uno cargado 
+
+7-SERIALIZADO Y DESERIALIZADO
+
+
 
 
