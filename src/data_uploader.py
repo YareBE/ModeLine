@@ -3,6 +3,9 @@ import sqlite3
 import streamlit as st
 import joblib
 
+class InvalidJoblibPacket(Exception):
+    pass
+
 
 def upload_file():
     """Load a dataset or a previously saved model from an uploaded file.
@@ -44,32 +47,36 @@ def upload_file():
         # Extract file extension for format detection
         extension = uploaded_file.name.split('.')[-1].lower()
         if extension != "joblib":
-            # Handle datafile (CSV, Excel and SQLite)
-            df = _error_handler(uploaded_file, extension)
-            with st.spinner("Loading data..."):
-                # Validate DataFrame is not empty
-                if df.empty:
-                    return None
-                # Store DataFrame in session state
-                st.session_state.df = df
-                st.success("✅ Dataset correctly loaded.")
+            try:
+                # Handle datafile (CSV, Excel and SQLite)
+                df = _error_handler(uploaded_file, extension)
+            
+            except Exception as e:
+                st.error(f"{e}. Try a new file.")
+        
+            else:
+                with st.spinner("Loading data..."):
+                    # Store DataFrame in session state
+                    st.session_state.df = df
+                    st.success("✅ Dataset correctly loaded.")
         else:
             # Handle model files (Joblib)
             with st.spinner("Loading data..."):
                 try:
                     # Load serialized model packet
-                    st.session_state.loaded_packet = joblib.load(uploaded_file)
+                    st.session_state.loaded_packet = _upload_joblib(uploaded_file)
+
+                except InvalidJoblibPacket as e:
+                    st.error(e)
+
+                else:             
                     # Store model name without extension
                     st.session_state.model_name = (
                         uploaded_file.name.replace('.joblib', '')
                     )
                     st.success("✅ Model correctly loaded.")
-                except Exception as e:
-                    st.error(f"Error loading model: {str(e)}")
 
-
-@st.cache_data(show_spinner=False)
-def _error_handler(file, extension):
+def _error_handler(file, extension): ##
     """Dispatch file reading based on extension and handle common errors.
 
     This function reads the uploaded ``file`` using the appropriate helper
@@ -89,7 +96,6 @@ def _error_handler(file, extension):
     """
     # Reset file pointer to ensure full file is read
     file.seek(0)
-    conn = None
     try:
         # Route to appropriate loader based on extension
         if extension == 'csv':
@@ -98,30 +104,19 @@ def _error_handler(file, extension):
             data = _upload_excel(file)
         elif extension in ('db', 'sqlite'):
             # SQLite requires connection object for querying
-            conn = sqlite3.connect(':memory:')
-            data = _upload_sql(file, conn)
-        else:
-            # Unsupported extension (shouldn't happen due to uploader filter)
-            raise ValueError(f"Unsupported file extension: {extension}")
-        
+            data = _upload_sql(file)
+    
+    except Exception as err:
+        raise Exception(err)
+
+    else:
         # Validate loaded data is not empty
-        if data is None or data.empty:
-            st.warning("Warning: Loaded file is empty")
+        if data.empty:
+            raise pd.errors.EmptyDataError(f"Empty {extension}")
         return data
 
-    except Exception as err:
-        # Catch all errors and display user-friendly message
-        st.error(f"Error while reading the data: {err}")
-        # Return empty DataFrame instead of None for consistent error handling
-        return pd.DataFrame()
 
-    finally:
-        # Always close SQLite connection to prevent resource leaks
-        if extension in ('db', 'sqlite') and conn:
-            conn.close()
-
-
-def _upload_csv(file):
+def _upload_csv(file): ##
     """Read a CSV file into a DataFrame and normalize its column names.
 
     Args:
@@ -135,24 +130,34 @@ def _upload_csv(file):
     """
     try:
         data = pd.read_csv(file)
-        # Convert all column names to strings (handles numeric/mixed types)
-        data.columns = data.columns.map(str)
-        return data
+    
     except UnicodeDecodeError:
         # pd.read_csv expects a UTF-8 by default
         file.seek(0)
-        return pd.read_csv(file, encoding='latin-1')
+        try:
+            data = pd.read_csv(file, encoding='latin-1')
+        except UnicodeDecodeError:
+            raise UnicodeDecodeError("Error while decoding the csv. ModeLine "
+                                     "expects UTF-8 or latin-1")
+    
     except pd.errors.EmptyDataError:
         # Specific error for empty CSV files
-        raise ValueError("CSV file is empty")
+        raise pd.errors.EmptyDataError("CSV file is empty")
+    
     except pd.errors.ParserError as e:
         # Parsing errors (malformed CSV, encoding issues, etc.)
-        raise ValueError(f"Error parsing CSV: {str(e)}")
+        raise pd.errors.ParserError(f"Error parsing CSV: {str(e)}")
+    
     except Exception as e:
         raise ValueError(f"Error reading csv file {str(e)}")
+    
+    else:
+        # Convert all column names to strings (handles numeric/mixed types)
+        data.columns = data.columns.map(str)
+        return data
 
 
-def _upload_excel(file):
+def _upload_excel(file): ##
     """Read an Excel file into a DataFrame using ``openpyxl`` engine.
 
     Args:
@@ -168,15 +173,22 @@ def _upload_excel(file):
     try:
         # Use openpyxl engine for modern Excel format support
         data = pd.read_excel(file, engine='openpyxl')
-        # Convert all column names to strings
-        data.columns = data.columns.map(str)
-        return data
+    
+    except pd.errors.EmptyDataError:
+        # Specific error for empty CSV files
+        raise pd.errors.EmptyDataError("Excel file is empty")
+        
     except Exception as e:
         # Catch all Excel-related errors (corrupted file, wrong format, etc.)
         raise ValueError(f"Error reading Excel file: {str(e)}")
+    
+    else:
+        # Convert all column names to strings
+        data.columns = data.columns.map(str)
+        return data
 
 
-def _upload_sql(file, conn):
+def _upload_sql(file): ##
     """Load a SQLite database file into a DataFrame by reading the first table.
 
     The provided ``conn`` must be an in-memory sqlite3 connection. The
@@ -196,6 +208,7 @@ def _upload_sql(file, conn):
         ValueError: If the database contains no tables or cannot be read.
     """
     try:
+        conn = sqlite3.connect(':memory:')
         # Load SQLite file content into in-memory database
         conn.deserialize(file.read())
 
@@ -207,15 +220,32 @@ def _upload_sql(file, conn):
 
         # Validate that at least one table exists 
         if tables.empty:
-            raise ValueError("No tables found in SQLite database")
+            raise pd.errors.EmptyDataError("No tables found in SQLite database")
         # Get name of first table
         table = tables.iloc[0, 0]
         # Read entire table into DataFrame
         data = pd.read_sql_query(f"SELECT * FROM {table}", conn)
-        # Convert all column names to strings
-        data.columns = data.columns.map(str)
-        return data
+    
     except Exception as e:
         # Catch all SQLite related errors
         raise ValueError(f"Error reading SQLite file: {str(e)}")
+    
+    else:
+        # Convert all column names to strings
+        data.columns = data.columns.map(str)
+        return data
+    
+    finally:
+        conn.close()
 
+def _upload_joblib(file): ##
+    try:
+        packet = joblib.load(file)
+
+    except Exception as e:
+        raise ValueError(f"Unexpected error reading joblib file: {str(e)}")
+    
+    else:
+        if not packet.get("app") or packet.get("app") != 'ModeLine':
+            raise InvalidJoblibPacket("This joblib file is not from ModeLine!")
+        return packet
