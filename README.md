@@ -8,7 +8,7 @@
 - Contacts
 
 ## About
-ModeLine is an application for the creation and visualization of simple and multiple linear regression models from given data stored in different formats (.csv, .xslx, .db...) and make predictions with them.
+ModeLine is an application for the creation and visualization of simple and multiple linear regression models from given datasets stored in different formats (.csv, .xslx, .db...) or already stored sklearn models with ModeLine (.joblib) and make predictions with them.
 
 It adheres to high standards of flexibility, reusability, and reliability, utilizing well-known software design patterns. These patterns ensure the following benefits:
 
