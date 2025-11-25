@@ -40,6 +40,9 @@ NAs from scratch.
 
 c.Feedback (positive or negative) is returned to the user after preprocessing.
 
+d.Check that the constant input allows the user to introduce only a numeric value,
+and otherwise an error will raise.
+
 4-SEED AND SPLIT
 
 a.Check with the same variables, seed and split, if the same results are returned
@@ -72,4 +75,6 @@ a.Make sure it gives an error if you try to download the file without a name
 b.Check that the loaded data matches the saved model data
 
 c.Try to load a joblib model of a different type than the ones ModeLine creates and
-that it gives an error
+make sure it gives an error
+
+8.VARIOUS EXPLORATORY TESTS
