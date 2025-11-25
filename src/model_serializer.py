@@ -71,20 +71,98 @@ def store_model():
         st.error(f"❌ Error: {str(e)}")
 
 def _packet_creation(model, description, features, target, formula, metrics): ##
-    # Build model packet dictionary with all relevant data
-    # This allows the model to be loaded and used independently
-    packet = {
-            "model": model,        # Trained model object
-            "description": description, # User-provided description
-            "features": features,  # List of feature column names
-            "target": target,      # Target variable names
-            "formula": formula,    # Model formula string
-            "metrics": metrics     # Dict with performance metrics
+    """Create a joblib-serializable packet with model and metadata (backend).
+    
+    Pure backend function with no Streamlit dependencies - suitable for
+    unit testing.
+    
+    Args:
+        model: Trained scikit-learn LinearRegression model.
+        description (str): User-provided description (can be empty).
+        features (list): List of feature column names.
+        target (list): List with target variable name.
+        formula (str): Model formula string representation.
+        metrics (dict): Dict with performance metrics (train/test).
+    
+    Returns:
+        io.BytesIO: In-memory buffer containing joblib-serialized packet.
+    
+    Raises:
+        ValueError: If model is None, features/target empty, or invalid types.
+        TypeError: If required parameters have wrong types.
+        RuntimeError: If serialization fails.
+    """
+    # Validate model
+    if model is None:
+        raise ValueError("Model cannot be None")
+    
+    # Validate description
+    if description is None:
+        description = ""
+    elif not isinstance(description, str):
+        raise TypeError(f"description must be str, got {type(description).__name__}")
+    
+    # Validate features
+    if features is None or (isinstance(features, (list, tuple)) and len(features) == 0):
+        raise ValueError("features cannot be None or empty")
+    if not isinstance(features, (list, tuple)):
+        raise TypeError(f"features must be list/tuple, got {type(features).__name__}")
+    if not all(isinstance(f, str) for f in features):
+        raise TypeError("All features must be strings")
+    
+    # Validate target
+    if target is None or (isinstance(target, (list, tuple)) and len(target) == 0):
+        raise ValueError("target cannot be None or empty")
+    if not isinstance(target, (list, tuple)):
+        raise TypeError(f"target must be list/tuple, got {type(target).__name__}")
+    if len(target) != 1:
+        raise ValueError(f"target must contain exactly 1 element, got {len(target)}")
+    if not isinstance(target[0], str):
+        raise TypeError("target element must be string")
+    
+    # Validate formula
+    if formula is None:
+        raise ValueError("formula cannot be None")
+    if not isinstance(formula, str):
+        raise TypeError(f"formula must be str, got {type(formula).__name__}")
+    if len(formula.strip()) == 0:
+        raise ValueError("formula cannot be empty string")
+    
+    # Validate metrics
+    if metrics is None:
+        raise ValueError("metrics cannot be None")
+    if not isinstance(metrics, dict):
+        raise TypeError(f"metrics must be dict, got {type(metrics).__name__}")
+    if len(metrics) == 0:
+        raise ValueError("metrics cannot be empty")
+    
+    # Build packet dictionary
+    try:
+        packet = {
+            "model": model,
+            "description": description,
+            "features": list(features),
+            "target": list(target),
+            "formula": formula,
+            "metrics": metrics,
+            "app": "ModeLine"
         }
+    except Exception as e:
+        raise RuntimeError(f"Error building packet dictionary: {str(e)}")
+    
+    # Serialize to in-memory buffer
+    try:
+        buffer = io.BytesIO()
+        joblib.dump(packet, buffer)
+        buffer.seek(0)
         
-    # Use in-memory buffer to avoid writing to disk
-    buffer = io.BytesIO()
-    joblib.dump(packet, buffer)
-    # Reset buffer position to beginning for reading
-    buffer.seek(0)
-    return buffer
+        # Validate buffer is not empty
+        buffer_size = buffer.getbuffer().nbytes
+        if buffer_size == 0:
+            raise RuntimeError("Serialization produced empty buffer")
+        
+        return buffer
+    except TypeError as e:
+        raise TypeError(f"Cannot serialize packet (non-serializable object): {str(e)}")
+    except Exception as e:
+        raise RuntimeError(f"Error serializing packet to joblib: {str(e)}")

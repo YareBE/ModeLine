@@ -1,3 +1,8 @@
+"""Linear Regression model training and prediction backend.
+
+Pure functions with no Streamlit dependencies for unit testing.
+"""
+
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
@@ -7,27 +12,7 @@ import numpy as np
 
 
 def predict():
-    """Render a prediction UI and compute a single prediction.
-
-    The function builds a small form that allows the user to input numeric
-    values for each feature required by the trained or loaded model. The
-    feature and target names are retrieved from **st.session_state** or the
-    loaded packet. When the user clicks the predict button the model's
-    **predict** method is called and the result is displayed.
-
-    Side effects:
-        - Reads **st.session_state** keys such as **features**, **target**,
-          **model** and **loaded_packet**.
-        - Renders Streamlit inputs and outputs (metrics, messages).
-
-    Returns:
-        None
-
-    Raises:
-        None: Errors during prediction are caught and displayed to the user
-        via **st.error** rather than being raised.
-    """
-
+    """Render a prediction UI and compute a single prediction."""
     st.subheader("Predict with ModeLine")
     st.markdown("##### Enter the input values for your prediction")
 
@@ -50,7 +35,6 @@ def predict():
         return
     
     columns = {}
-    #Inputs formatting
     for i in range(len(features)):
         if i % 4 == 0:
             columns[str(i//4)] = st.columns(np.ones(4))
@@ -63,274 +47,178 @@ def predict():
 
     if st.button("PREDICT", type="primary"):
         try:
-            inputs = np.array(inputs).reshape(1, -1)
-            prediction = model.predict(inputs)
-                    
-            # Display results
-            st.markdown(f"#### Predicted {target[0]}: "
-                        f"{prediction[0][0]:,.3f}")
-
+            prediction = _modeline_prediction(model, inputs)
+            st.markdown(f"#### Predicted {target[0]}: {prediction:,.3f}")
         except Exception as e:
             st.error(f"Error making prediction: {str(e)}")
 
-class LRTrainer:
-    """Linear Regression trainer with validation, splitting and evaluation.
 
-    This class wraps common steps required to fit and evaluate a scikit-learn
-    **LinearRegression** model: input validation, coercion to DataFrame,
-    optional train/test splitting (disabled for very small datasets) and
-    calculation of common metrics (R² and MSE).
-    """
-
-    def __init__(self, X, y, train_size, split_seed):
-        """Initialize the trainer and prepare train/test subsets.
-
-        Args:
-            X (pandas.DataFrame or array-like): Feature matrix.
-            y (pandas.DataFrame or array-like): Target vector or DataFrame.
-            train_size (float): Fraction of data to use for training (0..1).
-            split_seed (int): Random seed used for reproducible splitting.
-
-        Raises:
-            ValueError: If the inputs are invalid (mismatched lengths, empty,
-                or train_size out of range).
-        """
-        # Initialize model and prediction attributes
-        self.model = None
-        self.y_train_pred = None
-        self.y_test_pred = None
-        # Determine if dataset is large enough for train/test split
-        # Minimum 10 rows required
-        self._test_available = len(X) >= 10
-        
-        # Validate inputs before processing
-        self._validate_inputs(X, y, train_size)
-        # Ensure data is in DataFrame format for consistent handling
-        X, y = self._ensure_dataframe(X, y)
-        # Split data into train/test sets
-        self._split_dataset(X, y, train_size, split_seed)
-
-    @staticmethod
-    def _validate_inputs(X, y, train_size):
-        """Validate constructor inputs for basic consistency.
-
-        Ensures that X and y are not None, have matching lengths, are not
-        empty, and that **train_size** is within the [0, 1] range.
-
-        Args:
-            X: Feature matrix or equivalent.
-            y: Target vector or equivalent.
-            train_size (float): Train set fraction.
-
-        Raises:
-            ValueError: On any validation failure.
-        """
-        # Check for None inputs
-        if X is None or y is None:
-            raise ValueError("X and y cannot be None")
-
-        # Validate matching dimensions
-        if len(X) != len(y):
-            raise ValueError(
-                f"X and y must have same length. Got X: {len(X)}, y: {len(y)}"
-            )
-        
-        # Check for empty datasets
-        if len(X) == 0:
-            raise ValueError("X and y cannot be empty")
-
-        # Validate train size is a valid proportion
-        if not (0 <= train_size <= 1):
-            raise ValueError("train_size must be between 0 and 1")
-
-    @staticmethod
-    def _ensure_dataframe(X, y):
-        """Convert array-like inputs to pandas DataFrames.
-
-        Args:
-            X: Feature matrix (DataFrame or array-like).
-            y: Target values (DataFrame or array-like).
-
-        Returns:
-            tuple: **(X_df, y_df)** where both are pandas DataFrames.
-        """
-        # Convert X to DataFrame if it's array-like
-        if not isinstance(X, pd.DataFrame):
-            X = pd.DataFrame(X)
-
-        # Convert y to DataFrame if it's array-like
-        if not isinstance(y, pd.DataFrame):
-            y = pd.DataFrame(y)
-
-        return X, y
-
-    def _split_dataset(self, X, y, train_size, split_seed):
-        """Split the dataset into training and test subsets.
-
-        If the dataset is too small (fewer than 10 rows) the trainer will
-        disable the test split and return the full dataset as the training
-        set. Otherwise the function uses scikit-learn **train_test_split**
-        with the provided **train_size** and **random_state**.
-
-        Args:
-            X (pandas.DataFrame): Feature DataFrame.
-            y (pandas.DataFrame): Target DataFrame.
-            train_size (float): Fraction of data for training (0..1).
-            split_seed (int): Random seed for reproducibility.
-
-        Returns:
-            None: Subsets are stored on the instance as attributes
-            **X_train**, **X_test**, **y_train** and **y_test**.
-        """
-        if self._test_available:
-            # Standard train/test split for adequate dataset size
-            (self.X_train, self.X_test, self.y_train,
-             self.y_test) = train_test_split(
-                X, y, train_size=train_size, random_state=split_seed
-            )
-        else:
-            # Use all data for training, no test set
-            self.X_train, self.X_test, self.y_train, self.y_test = (
-                X, None, y, None
-            )
-
-    def train_model(self):
-        """Fit a scikit-learn LinearRegression model on the training data.
-
-        Returns:
-            sklearn.linear_model.LinearRegression: The fitted model instance.
-
-        Raises:
-            ValueError: If training data are not initialized.
-            RuntimeError: If the underlying scikit-learn fit fails.
-        """
-        # Validate training data exists 
-        if self.X_train is None or self.y_train is None:
-            raise ValueError(
-                "Training data not initialized. Check __init__ method"
-            )
-
-        try:
-            # Initialize sklearn's LinearRegression model
-            self.model = LinearRegression()
-
-            # Fit model using training data (computes coefficients)
-            self.model.fit(self.X_train, self.y_train)
-
-            return self.model
-        except Exception as e:
-            # Catch fitting errors 
-            raise RuntimeError(f"Error training model: {str(e)}")
-
-    def get_splitted_subsets(self):
-        """Return the train/test subsets produced during initialization.
-
-        Returns:
-            tuple: **(X_train, X_test, y_train, y_test)**. For small datasets
-            where no test split was created, **X_test** and **y_test** will
-            be **None**.
-        """
-        return self.X_train, self.X_test, self.y_train, self.y_test
-
-    def get_formula(self):
-        """Return a human-readable regression formula string.
-
-        The formula is constructed using feature names from **X_train** and
-        the model coefficients and intercept. The resulting string is suitable
-        for display in the UI.
-
-        Returns:
-            str: A formatted equation like **target = 0.1234 * x1 + ...**.
-
-        Raises:
-            ValueError: If the model has not been trained yet.
-            RuntimeError: If coefficient extraction or formatting fails.
-        """
-        # Ensure model is trained before accessing coefficients
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train_model() first")
-
-        try:
-            # Extract feature and target names from DataFrames
-            feature_names = self.X_train.columns.tolist()
-            target_name = self.y_train.columns[0]
-
-            # Get model coefficients and intercept
-            coefs = self.model.coef_.ravel()
-            intercept = self.model.intercept_[0]
-
-            # Build formula string piece by piece
-            formula_parts = [f"{target_name} = "]
-
-            # Add coefficient terms for each feature
-            for i, (name, coef) in enumerate(zip(feature_names, coefs)):
-                if i == 0:
-                    # First term: no leading +/- sign
-                    formula_parts.append(f"{coef:.4f} * {name}")
-                else:
-                    # Subsequent terms: add explicit +/- sign
-                    sign = "+" if coef >= 0 else "-"
-                    formula_parts.append(f" {sign} {abs(coef):.4f} * {name}")
-
-            # Add intercept term with appropriate sign
-            sign = "+" if intercept >= 0 else "-"
-            formula_parts.append(f" {sign} {abs(intercept):.4f}")
-
-            # Join all parts into single string
-            return "".join(formula_parts)
-
-        except Exception as e:
-            raise RuntimeError(f"Error generating formula: {str(e)}")
-
-    def test_model(self):
-        """Compute predictions and evaluate model performance.
-
-        The method predicts on the training set and computes R² and MSE. If a
-        test set is available (dataset large enough) it also predicts on the
-        test set and computes the same metrics. The method returns a metrics
-        dictionary together with the raw prediction arrays.
-
-        Returns:
-            tuple: **(metrics, y_train_pred, y_test_pred)** where **metrics**
-            is a dict with keys **'train'** and optionally **'test'** and
-            each contains **'r2'** and **'mse'** floats.
-
-        Raises:
-            ValueError: If called before training the model.
-            RuntimeError: On prediction or metric computation errors.
-        """
-        # Ensure model is trained before making predictions
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train_model() first")
-
-        try:
-            # Generate predictions for training set
-            y_train_pred = self.model.predict(self.X_train)
-
-            # Calculate training metrics
-            metrics = {
-                'train': {
-                    'r2': r2_score(self.y_train, y_train_pred),
-                    'mse': mean_squared_error(self.y_train, y_train_pred)
-                }
-            }
-
-            # Initialize test predictions as None (for small datasets)
-            y_test_pred = None
-
-            # Calculate test metrics if test set exists
-            if self._test_available:
-                y_test_pred = self.model.predict(self.X_test)
-                metrics['test'] = {
-                    'r2': r2_score(self.y_test, y_test_pred),
-                    'mse': mean_squared_error(self.y_test, y_test_pred)
-                }
-
-            return metrics, y_train_pred, y_test_pred
-
-        except Exception as e:
-            # Catch prediction or metric calculation errors
-            raise RuntimeError(f"Error testing model: {str(e)}")
+def _modeline_prediction(model, inputs): ##
+    """Make a prediction using the trained model (backend)."""
+    if model is None:
+        raise ValueError("Model cannot be None")
     
+    if inputs is None or (isinstance(inputs, (list, tuple)) and len(inputs) == 0):
+        raise ValueError("Inputs cannot be empty")
+    
+    try:
+        inputs_array = np.array(inputs).reshape(1, -1)
+    except (ValueError, TypeError) as e:
+        raise TypeError(f"Cannot convert inputs to array: {str(e)}")
+    
+    expected_features = model.n_features_in_
+    actual_features = inputs_array.shape[1]
+    
+    if actual_features != expected_features:
+        raise ValueError(
+            f"Input shape mismatch: expected {expected_features} "
+            f"features, got {actual_features}"
+        )
+    
+    try:
+        prediction = model.predict(inputs_array)
+        if prediction is None or len(prediction) == 0:
+            raise RuntimeError("Model returned empty prediction")
+        return float(prediction[0])
+    except Exception as e:
+        raise RuntimeError(f"Unexpected error during prediction: {str(e)}")
 
+
+def _validate_inputs(X, y, train_size): ##
+    """Validate inputs (backend)."""
+    if X is None or y is None:
+        raise ValueError("X and y cannot be None")
+    if len(X) != len(y):
+        raise ValueError(
+            f"X and y must have same length. Got X: {len(X)}, y: {len(y)}"
+        )
+    if len(X) == 0:
+        raise ValueError("X and y cannot be empty")
+    if not (0 < train_size < 1):
+        raise ValueError("train_size must be between 0 and 1 (exclusive)")
+
+
+def _ensure_dataframe(X, y): ##
+    """Convert array-like inputs to pandas DataFrames (backend)."""
+    if not isinstance(X, pd.DataFrame):
+        X = pd.DataFrame(X)
+    if not isinstance(y, pd.DataFrame):
+        y = pd.DataFrame(y)
+    return X, y
+
+
+def split_dataset(X, y, train_size, split_seed): ##
+    """Split the dataset into training and test subsets (backend)."""
+    # Ensure inputs are DataFrames
+    X, y = _ensure_dataframe(X, y)
+    
+    # Validate inputs
+    _validate_inputs(X, y, train_size)
+    
+    # Validate split_seed
+    try:
+        split_seed = int(split_seed)
+        if split_seed < 0:
+            raise ValueError("split_seed must be non-negative")
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid split_seed: {str(e)}")
+    
+    # Check dataset size
+    n_samples = len(X)
+    if n_samples < 10:
+        return X, None, y, None
+    
+    # Perform split
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, train_size=train_size, random_state=split_seed
+        )
+        if X_train.empty or X_test.empty or y_train.empty or y_test.empty:
+            raise RuntimeError("Split resulted in empty subsets")
+        return X_train, X_test, y_train, y_test
+    except Exception as e:
+        raise RuntimeError(f"Error during train/test split: {str(e)}")
+
+
+def train_linear_regression(X_train, y_train): ##
+    """Train a LinearRegression model on training data (backend)."""
+    if X_train is None:
+        raise ValueError("X_train cannot be None")
+    if y_train is None:
+        raise ValueError("y_train cannot be None")
+    
+    # Ensure inputs are DataFrames
+    X_train, y_train = _ensure_dataframe(X_train, y_train)
+    
+    # Validate inputs (use dummy train_size=0.8 for validation purposes)
+    _validate_inputs(X_train, y_train, train_size=0.8)
+    
+    try:
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+        if model.coef_ is None or model.intercept_ is None:
+            raise RuntimeError("Model fit failed: coefficients not computed")
+        return model
+    except ValueError as e:
+        raise ValueError(f"Model fitting validation failed: {str(e)}")
+    except Exception as e:
+        raise RuntimeError(f"Error training LinearRegression: {str(e)}")
+
+
+def generate_formula(model, feature_names, target_name): ##
+    """Generate a human-readable regression formula string (backend)."""
+    if model is None:
+        raise ValueError("Model cannot be None")
+
+    try:
+        coefs = model.coef_.ravel()
+        intercept = model.intercept_[0] if isinstance(model.intercept_, np.ndarray) else model.intercept_
+
+        formula_parts = [f"{target_name} = "]
+
+        for i, (name, coef) in enumerate(zip(feature_names, coefs)):
+            if i == 0:
+                formula_parts.append(f"{coef:.4f} * {name}")
+            else:
+                sign = "+" if coef >= 0 else "-"
+                formula_parts.append(f" {sign} {abs(coef):.4f} * {name}")
+
+        sign = "+" if intercept >= 0 else "-"
+        formula_parts.append(f" {sign} {abs(intercept):.4f}")
+
+        return "".join(formula_parts)
+
+    except Exception as e:
+        raise RuntimeError(f"Error generating formula: {str(e)}")
+
+
+def evaluate_model(model, X_train, y_train, X_test=None, y_test=None): ##
+    """Evaluate model performance on train/test sets (backend)."""
+    if model is None:
+        raise ValueError("Model cannot be None")
+
+    try:
+        y_train_pred = model.predict(X_train)
+
+        metrics = {
+            'train': {
+                'r2': float(r2_score(y_train, y_train_pred)),
+                'mse': float(mean_squared_error(y_train, y_train_pred))
+            }
+        }
+
+        if X_test is not None and y_test is not None:
+            y_test_pred = model.predict(X_test)
+            metrics['test'] = {
+                'r2': float(r2_score(y_test, y_test_pred)),
+                'mse': float(mean_squared_error(y_test, y_test_pred))
+            }
+            return y_train_pred, y_test_pred, metrics
+        
+        return y_train_pred, None, metrics
+
+        
+
+    except Exception as e:
+        raise RuntimeError(f"Error evaluating model: {str(e)}")
  

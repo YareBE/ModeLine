@@ -3,7 +3,7 @@ from data_uploader import upload_file
 from data_preprocess import (
     parameters_selection, na_handler, set_split
 )
-from model_trainer import LRTrainer, predict
+from model_trainer import *
 from display_utils import ( 
             display_dataframe, visualize_results, plot_results, display_uploaded_model
 )
@@ -124,7 +124,7 @@ class Interface:
 
         # Display loaded model instead of training workflow
         if st.session_state.loaded_packet is not None:
-            upload_model()
+            display_uploaded_model()
             predict()
             return
 
@@ -214,28 +214,26 @@ class Interface:
                 train_ratio = 1
                 seed = 0
 
-            # Initialize trainer with data and split configuration
-            trainer = LRTrainer(X, y, train_ratio, seed)
-
             # Store train/test subsets in session state
             (st.session_state.X_train, st.session_state.X_test,
              st.session_state.y_train, st.session_state.y_test) = (
-                trainer.get_splitted_subsets()
+                 split_dataset(X, y, train_ratio, seed)
+                
             )
 
             # Train model and store in session state
-            st.session_state.model = trainer.train_model()
+            st.session_state.model = train_linear_regression(st.session_state.X_train,
+                                            st.session_state.y_train)
 
             # Evaluate model and store metrics and predictions
-            (st.session_state.metrics, st.session_state.y_train_pred,
-             st.session_state.y_test_pred) = trainer.test_model()
+            (st.session_state.y_train_pred, st.session_state.y_test_pred, \
+            st.session_state.metrics, ) = evaluate_model(st.session_state.model, \
+                st.session_state.X_train, st.session_state.y_train, \
+                st.session_state.X_test, st.session_state.y_test)
 
             # Generate and store a readable formula
-            st.session_state.formula = trainer.get_formula()
-
-            # Reset prediction state when new model is trained
-            st.session_state.prediction_result = None
-            st.session_state.prediction_inputs = {}
+            st.session_state.formula = generate_formula(st.session_state.model, \
+                    st.session_state.features, st.session_state.target[0])
 
             st.balloons()
 
