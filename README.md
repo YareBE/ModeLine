@@ -4,6 +4,7 @@
 
 **ModeLine** is a web application for creating and visualizing simple and multiple linear regression models with minimal effort.
 
+---
 
 ## Contents
 
@@ -17,6 +18,7 @@
 - [Support](#support-us)
 - [Contacts](#contacts)
 
+---
 
 ## About
 
@@ -32,6 +34,7 @@ ModeLine adheres to high standards of flexibility, reusability, and reliability,
 
 This project is ideal for students learning linear regression, beginner programmers, or experienced users like data scientists who need to quickly create regression models.
 
+---
 
 ## Features
 
@@ -42,11 +45,13 @@ This project is ideal for students learning linear regression, beginner programm
 - Save and reload models easily
 - Quick predictions from trained models
 
+---
 
 ## Visuals
 ![Example of Modeline 1](./images/example1.png)
 ![Example of Modeline 2](./images/example2.png)
 
+---
 
 ## How to Install
 
@@ -68,6 +73,8 @@ pip install -r requirements.txt
 streamlit run src/modeline.py
 ```
 
+---
+
 ## Usage
 
 Once the app is running:
@@ -79,6 +86,7 @@ Once the app is running:
 5. View the model formula, evaluation metrics (R², MSE), and interactive plots.
 6. Make predictions or download the trained model for reuse.
 
+---
 
 ## Feedback and Contributions
 We've made every effort to make out application the most complete possible, however we may have encountered many errors. Whether you have feedback on features, have encountered any bugs, or have suggestions for enhancements, we're eager to hear from you. Your insights make ModeLine more robust and user-friendly.
@@ -87,11 +95,13 @@ Please feel free to contribute by submitting an issue or joining the discussions
 
 We appreciate your support and look forward to making our product even better with your help!
 
+---
 
 ## License
 
 This software is licensed under the [MIT LICENSE](https://github.com/YareBE/ModeLine/blob/main/LICENSE)
 
+---
 
 ## Suppport us
 
@@ -99,6 +109,7 @@ Si te gusta este proyecto y deseas apoya su desarrollo, puedes hacerlo aquí:
 
 - Github Sponsors [add link]
 
+---
 
 ## Contacts
 
