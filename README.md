@@ -22,11 +22,11 @@
 
 ## About
 
-ModeLine is an easy-to-use application for creating and visualizing linear regression models from any datasets. Users can upload datasets in multiple formats: .csv, .xslx, .db, etc. But you could also load previously saved scikit-learn models in joblib format.
+ModeLine is an easy-to-use application for creating and visualizing linear regression models from any datasets. Users can upload datasets in multiple formats: .csv, .xslx, .db, etc. But also load previously saved scikit-learn models in a Modeline-Joblib format.
 
 The results can be visualized whit a clean, modern UI. The app provides: the model formula, evaluation metrics (R², MSE), descriptive and interactive charts using Plotly, functionalities to make predictions with your model and the option to download the models you create for reusability.
 
-ModeLine adheres to high standards of flexibility, reusability, and reliability, utilizing well-known software design patterns. These patterns ensure the following benefits:
+ModeLine adheres to high standards of flexibility, reusability, and reliability, utilizing a well-known software design methodology (Scrum) and patterns. These patterns ensure the following benefits:
 
   - Modularity: Different parts of the library can function independently, enhancing the library's modularity and allowing for easier maintenance and updates.
   - Testability: Improved separation of concerns makes the code more testable.
@@ -40,6 +40,7 @@ This project is ideal for students learning linear regression, beginner programm
 
 - Simple and modern web interface
 - Multiple dataset format support
+- Data preprocessing (null handling, parameters selection, generation seed...)
 - Create simple and multiple linear regression models
 - Interactive visualization of results
 - Save and reload models easily
@@ -80,7 +81,7 @@ streamlit run src/modeline.py
 Once the app is running:
 
 1. Upload a dataset (`.csv`, `.xlsx`, etc.) or load an existing model (`.joblib`).
-2. If you loaded a model, you can immediately view its results and make predictions.
+2. If you loaded a model, you can immediately visualize its results and make predictions.
 3. If you uploaded a new dataset, select the features and target variable for your regression model.
 4. Handle missing values by choosing a substitution method: Mean, Median, Delete, or Constant.
 5. View the model formula, evaluation metrics (R², MSE), and interactive plots.
@@ -103,20 +104,12 @@ This software is licensed under the [MIT LICENSE](https://github.com/YareBE/Mode
 
 ---
 
-## Support
-
-Si te gusta este proyecto y deseas apoya su desarrollo, puedes hacerlo aquí:
-
-- Github Sponsors [add link]
-
----
-
 ## Contacts
 
 For more details about out products, services, or any general information regarding the application, feel free to reach out to us. We are here to provide support and answer any questions you may have. You can contact our team at:
 
 - Pablo Fernández Ríos — [pablo.fernandez.rios@udc.es](mailto:pablo.fernandez.rios@udc.es)
-- Yare Bespinosa — [yare.bespinosa@udc.es](mailto:yare.bespinosa@udc.es)
+- Yare Brea Espinosa — [yare.bespinosa@udc.es](mailto:yare.bespinosa@udc.es)
 - Rodrigo Marino Álvarez — [rodrigo.marino.alvarez@udc.es](mailto:rodrigo.marino.alvarez@udc.es)
 
 We look forward to assisting you and ensuring your experience with our product is succesful and enjoyable!
