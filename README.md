@@ -103,7 +103,7 @@ This software is licensed under the [MIT LICENSE](https://github.com/YareBE/Mode
 
 ---
 
-## Suppport
+## Support
 
 Si te gusta este proyecto y deseas apoya su desarrollo, puedes hacerlo aquí:
 
