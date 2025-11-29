@@ -1,95 +1,38 @@
+"""Data uploading and parsing utilities for various file formats.
+
+This module handles loading data from multiple file formats:
+- CSV and Excel (.xlsx) files for tabular data
+- SQLite databases for structured data
+- joblib files containing serialized ModeLine model packets
+
+All functions include type hints, comprehensive docstrings, and robust error handling.
+"""
+
 import pandas as pd
 import sqlite3
 import streamlit as st
 import joblib
+from typing import BinaryIO, Dict, Any
+
 
 class InvalidJoblibPacket(Exception):
+    """Raised when a joblib file is not a valid ModeLine model packet."""
     pass
 
 
-def upload_file():
-    """Load a dataset or a previously saved model from an uploaded file.
-
-    This helper is intended to be used within a Streamlit app. The function
-    renders a ``st.file_uploader`` control and loads the provided file based
-    on its extension. Supported formats include CSV, Excel, SQLite databases
-    and serialized Joblib packets containing a saved model.
-
-    Side effects:
-        - Updates keys in ``st.session_state`` such as ``df``,
-          ``loaded_packet``, ``model_name`` and ``file``.
-
-    Returns:
-        None: Results are stored into ``st.session_state`` for downstream use.
-    """
-    uploaded_file = st.file_uploader(
-        "Upload your dataset or a previously saved model",
-        type=["csv", "xls", "xlsx", "db", "sqlite", "joblib"],
-        help="Supported formats: CSV, Excel, SQLite and Joblib"
-    )
-
-    if st.session_state.file != uploaded_file:
-        # Reset session state only when file actually changes
-        for key in st.session_state:
-            if key == "features" or key == "target":
-                # Reset selection lists to empty
-                st.session_state[key] = []
-            elif key in ["processed_data", "description", "model", "na_method",
-                         "df", "loaded_packet"]:
-                # Reset objects to None
-                st.session_state[key] = None
-        
-        # Store uploaded file reference
-        st.session_state.file = uploaded_file
-        if uploaded_file is None:
-            return None
-        
-        # Extract file extension for format detection
-        extension = uploaded_file.name.split('.')[-1].lower()
-        if extension != "joblib":
-            try:
-                # Handle datafile (CSV, Excel and SQLite)
-                df = _error_handler(uploaded_file, extension)
-            
-            except Exception as e:
-                st.error(f"{e}. Try a new file.")
-        
-            else:
-                with st.spinner("Loading data..."):
-                    # Store DataFrame in session state
-                    st.session_state.df = df
-                    st.success("✅ Dataset correctly loaded.")
-        else:
-            # Handle model files (Joblib)
-            with st.spinner("Loading data..."):
-                try:
-                    # Load serialized model packet
-                    st.session_state.loaded_packet = _upload_joblib(uploaded_file)
-
-                except InvalidJoblibPacket as e:
-                    st.error(e)
-
-                else:             
-                    # Store model name without extension
-                    st.session_state.model_name = (
-                        uploaded_file.name.replace('.joblib', '')
-                    )
-                    st.success("✅ Model correctly loaded.")
-
-def _error_handler(file, extension): ##
+def dataset_error_handler(file: BinaryIO, extension: str) -> pd.DataFrame:
     """Dispatch file reading based on extension and handle common errors.
 
-    This function reads the uploaded ``file`` using the appropriate helper
-    depending on the detected ``extension``. For SQLite files, an in-memory
+    This function reads the uploaded file using the appropriate helper
+    depending on the detected extension. For SQLite files, an in-memory
     SQLite connection is used to deserialize the content.
 
     Args:
-        file (io.BufferedIOBase): Uploaded file-like object (Streamlit
-            upload provides this).
+        file (BinaryIO): Uploaded file-like object (Streamlit upload provides this).
         extension (str): File extension token (e.g. 'csv', 'xlsx', 'db').
 
     Returns:
-        pandas.DataFrame: Loaded DataFrame (may be empty on read errors).
+        pd.DataFrame: Loaded DataFrame (may be empty on read errors).
 
     Raises:
         ValueError: When an unsupported extension is passed.
@@ -103,8 +46,10 @@ def _error_handler(file, extension): ##
         elif extension in ('xls', 'xlsx'):
             data = _upload_excel(file)
         elif extension in ('db', 'sqlite'):
-            # SQLite requires connection object for querying
+            # SQLite requires in-memory connection for querying
             data = _upload_sql(file)
+        else:
+            raise ValueError(f"Unsupported file extension: {extension}")
     
     except Exception as err:
         raise Exception(err)
@@ -116,14 +61,17 @@ def _error_handler(file, extension): ##
         return data
 
 
-def _upload_csv(file): ##
+def _upload_csv(file: BinaryIO) -> pd.DataFrame:
     """Read a CSV file into a DataFrame and normalize its column names.
 
+    Handles common encoding issues (UTF-8 and latin-1) and provides
+    descriptive error messages for malformed CSV data.
+
     Args:
-        file (io.BufferedIOBase): File-like object positioned at start.
+        file (BinaryIO): File-like object positioned at start.
 
     Returns:
-        pandas.DataFrame: Parsed CSV content with stringified column names.
+        pd.DataFrame: Parsed CSV content with stringified column names.
 
     Raises:
         ValueError: If the CSV is empty or cannot be parsed.
@@ -132,13 +80,13 @@ def _upload_csv(file): ##
         data = pd.read_csv(file)
     
     except UnicodeDecodeError:
-        # pd.read_csv expects a UTF-8 by default
+        # pd.read_csv expects UTF-8 by default, fall back to latin-1
         file.seek(0)
         try:
             data = pd.read_csv(file, encoding='latin-1')
         except UnicodeDecodeError:
-            raise UnicodeDecodeError("Error while decoding the csv. ModeLine "
-                                     "expects UTF-8 or latin-1")
+            raise UnicodeDecodeError("utf-8", b"", 0, 1,
+                "Error while decoding the csv. ModeLine expects UTF-8 or latin-1")
     
     except pd.errors.EmptyDataError:
         # Specific error for empty CSV files
@@ -149,7 +97,7 @@ def _upload_csv(file): ##
         raise pd.errors.ParserError(f"Error parsing CSV: {str(e)}")
     
     except Exception as e:
-        raise ValueError(f"Error reading csv file {str(e)}")
+        raise ValueError(f"Error reading csv file: {str(e)}")
     
     else:
         # Convert all column names to strings (handles numeric/mixed types)
@@ -157,25 +105,27 @@ def _upload_csv(file): ##
         return data
 
 
-def _upload_excel(file): ##
-    """Read an Excel file into a DataFrame using ``openpyxl`` engine.
+def _upload_excel(file: BinaryIO) -> pd.DataFrame:
+    """Read an Excel file into a DataFrame using openpyxl engine.
+    
+    Loads the first sheet of an Excel workbook and converts column names
+    to strings for consistency with other data loaders.
 
     Args:
-        file (io.BufferedIOBase): File-like object representing the Excel
-            workbook.
+        file (BinaryIO): File-like object representing the Excel workbook.
 
     Returns:
-        pandas.DataFrame: Parsed sheet (first sheet) with string column names.
+        pd.DataFrame: Parsed first sheet with string column names.
 
     Raises:
         ValueError: If there is any problem reading the Excel file.
     """
     try:
-        # Use openpyxl engine for modern Excel format support
+        # Use openpyxl engine for modern Excel format (.xlsx) support
         data = pd.read_excel(file, engine='openpyxl')
     
     except pd.errors.EmptyDataError:
-        # Specific error for empty CSV files
+        # Specific error for empty Excel files
         raise pd.errors.EmptyDataError("Excel file is empty")
         
     except Exception as e:
@@ -188,21 +138,17 @@ def _upload_excel(file): ##
         return data
 
 
-def _upload_sql(file): ##
+def _upload_sql(file: BinaryIO) -> pd.DataFrame:
     """Load a SQLite database file into a DataFrame by reading the first table.
 
-    The provided ``conn`` must be an in-memory sqlite3 connection. The
-    function calls ``conn.deserialize`` using the uploaded file bytes to
-    populate the in-memory database and then reads the first available table
-    into a pandas DataFrame.
+    Creates an in-memory SQLite connection, deserializes the uploaded database
+    file into it, and reads the first available table into a pandas DataFrame.
 
     Args:
-        file (io.BufferedIOBase): Uploaded SQLite file-like object.
-        conn (sqlite3.Connection): In-memory connection instance used to
-            deserialize the database contents.
+        file (BinaryIO): Uploaded SQLite file-like object.
 
     Returns:
-        pandas.DataFrame: Contents of the first table in the database.
+        pd.DataFrame: Contents of the first table in the database.
 
     Raises:
         ValueError: If the database contains no tables or cannot be read.
@@ -218,9 +164,10 @@ def _upload_sql(file): ##
         )
         tables = pd.read_sql_query(table_query, conn)
 
-        # Validate that at least one table exists 
+        # Validate that at least one table exists
         if tables.empty:
             raise pd.errors.EmptyDataError("No tables found in SQLite database")
+        
         # Get name of first table
         table = tables.iloc[0, 0]
         # Read entire table into DataFrame
@@ -238,7 +185,31 @@ def _upload_sql(file): ##
     finally:
         conn.close()
 
-def _upload_joblib(file): ##
+
+def upload_joblib(file: BinaryIO) -> Dict[str, Any]:
+    """Load a joblib-serialized ModeLine model packet from file.
+    
+    Deserializes a joblib binary file and validates it contains a ModeLine
+    model packet (checks for 'app' key with value 'ModeLine'). Returns the
+    packet dictionary containing model, features, target, metrics, etc.
+
+    Args:
+        file (BinaryIO): Uploaded joblib file-like object.
+
+    Returns:
+        Dict[str, Any]: Packet dictionary with keys:
+            - 'model': LinearRegression model
+            - 'features': List of feature names
+            - 'target': List with target variable name
+            - 'formula': Formula string
+            - 'metrics': Dict with performance metrics
+            - 'description': User description
+            - 'app': Must be 'ModeLine'
+
+    Raises:
+        InvalidJoblibPacket: If joblib file is not from ModeLine.
+        ValueError: If joblib file cannot be read or deserialized.
+    """
     try:
         packet = joblib.load(file)
 
@@ -246,6 +217,7 @@ def _upload_joblib(file): ##
         raise ValueError(f"Unexpected error reading joblib file: {str(e)}")
     
     else:
+        # Validate this is a ModeLine packet
         if not packet.get("app") or packet.get("app") != 'ModeLine':
             raise InvalidJoblibPacket("This joblib file is not from ModeLine!")
         return packet

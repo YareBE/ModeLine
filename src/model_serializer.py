@@ -1,108 +1,64 @@
+"""Model serialization and packet creation for trained models.
+
+This module handles packaging trained LinearRegression models with metadata
+(description, features, target, formula, metrics) into joblib-serialized packets
+for downloading and later reuse.
+"""
+
 import streamlit as st
 import io
 import joblib
+from typing import List, Dict, Any
+from sklearn.linear_model import LinearRegression
 
 
-def store_model():
-    """Render UI to download the trained model and its metadata as joblib.
-
-    The function displays input controls for an optional description and a
-    filename. It packages the model object and metadata stored in
-    ``st.session_state`` into a single dictionary and serializes it to a
-    Joblib binary which is available via a Streamlit download button.
-
-    Side effects:
-                - Reads ``st.session_state`` keys such as ``model``, ``features``,
-                    ``target``, ``formula`` and ``metrics``.
-        - When the user clicks the download button, returns the serialized
-          bytes as a downloadable file.
-
-    Returns:
-        None
-
-    Raises:
-        Exception: Any error during serialization or download preparation
-            is caught and displayed to the user via **st.error**.
-    """
-    st.subheader("📦 Download Your Model")
-
-    # Create a two column display for input fields
-    col1, col2 = st.columns([2, 1])
+def packet_creation(
+    model: LinearRegression,
+    description: str,
+    features: List[str],
+    target: List[str],
+    formula: str,
+    metrics: Dict[str, Dict[str, float]]
+) -> io.BytesIO:
+    """Create a joblib-serializable packet with model and metadata.
     
-    # Column 1: Description text area
-    with col1:
-        # Optional description to help users remember purpose and context
-        st.text_area(
-            "Description (optional but recommended)",
-            placeholder='Example: "Model for predicting body weight"',
-            height=80, 
-            key = "description"
-        )
-    
-    # Column 2: Filename input
-    with col2:
-        # Filename input with default value
-        filename = st.text_input(
-            "File name",
-            value="exported_model"
-        )
-
-    # Validate filename and prepare download
-    if not filename or filename.strip() == '':
-        st.error("❌ File name cannot be empty!")
-        return
-
-    try:    
-        buffer = _packet_creation(st.session_state.model, st.session_state.description, st.session_state.features, 
-                    st.session_state.target, st.session_state.formula, st.session_state.metrics)
-        # Create download button with serialized data
-        if st.download_button(
-            label="⬇️ DOWNLOAD MODEL",
-            data=buffer.getvalue(),           # Get bytes from buffer
-            file_name=f"{filename}.joblib",   # Append .joblib extension
-            mime="application/octet-stream",  # Binary file type
-            type="primary",                 
-            use_container_width=True        
-        ):
-            st.success(f"✅ Model {filename} downloaded correctly!")
-
-    except Exception as e:
-        # Catch any errors during serialization or download preparation
-        st.error(f"❌ Error: {str(e)}")
-
-def _packet_creation(model, description, features, target, formula, metrics): ##
-    """Create a joblib-serializable packet with model and metadata (backend).
-    
-    Pure backend function with no Streamlit dependencies - suitable for
-    unit testing.
+    Pure backend function with no Streamlit dependencies - validates all inputs
+    thoroughly and creates an in-memory binary buffer containing the serialized
+    model packet ready for download or storage.
     
     Args:
-        model: Trained scikit-learn LinearRegression model.
-        description (str): User-provided description (can be empty).
-        features (list): List of feature column names.
-        target (list): List with target variable name.
-        formula (str): Model formula string representation.
-        metrics (dict): Dict with performance metrics (train/test).
+        model (LinearRegression): Trained scikit-learn LinearRegression model
+            with fitted coefficients and intercept.
+        description (str): User-provided model description (can be empty).
+        features (List[str]): List of feature column names used for training.
+        target (List[str]): List containing exactly one target variable name.
+        formula (str): Human-readable model formula string representation.
+        metrics (Dict[str, Dict[str, float]]): Performance metrics dict with structure:
+            {
+                'train': {'r2': float, 'mse': float},
+                'test': {'r2': float, 'mse': float}  # Optional
+            }
     
     Returns:
-        io.BytesIO: In-memory buffer containing joblib-serialized packet.
+        io.BytesIO: In-memory buffer containing joblib-serialized packet dict.
+            Buffer is positioned at start (seek(0)) ready for reading/download.
     
     Raises:
-        ValueError: If model is None, features/target empty, or invalid types.
-        TypeError: If required parameters have wrong types.
-        RuntimeError: If serialization fails.
+        ValueError: If model is None, features/target empty, or invalid content.
+        TypeError: If parameters have incorrect types.
+        RuntimeError: If serialization to joblib format fails.
     """
     # Validate model
     if model is None:
         raise ValueError("Model cannot be None")
     
-    # Validate description
+    # Validate description - convert None to empty string
     if description is None:
         description = ""
     elif not isinstance(description, str):
         raise TypeError(f"description must be str, got {type(description).__name__}")
     
-    # Validate features
+    # Validate features - must be non-empty list/tuple of strings
     if features is None or (isinstance(features, (list, tuple)) and len(features) == 0):
         raise ValueError("features cannot be None or empty")
     if not isinstance(features, (list, tuple)):
@@ -110,7 +66,7 @@ def _packet_creation(model, description, features, target, formula, metrics): ##
     if not all(isinstance(f, str) for f in features):
         raise TypeError("All features must be strings")
     
-    # Validate target
+    # Validate target - must be single-element list/tuple with string
     if target is None or (isinstance(target, (list, tuple)) and len(target) == 0):
         raise ValueError("target cannot be None or empty")
     if not isinstance(target, (list, tuple)):
@@ -120,7 +76,7 @@ def _packet_creation(model, description, features, target, formula, metrics): ##
     if not isinstance(target[0], str):
         raise TypeError("target element must be string")
     
-    # Validate formula
+    # Validate formula - must be non-empty string
     if formula is None:
         raise ValueError("formula cannot be None")
     if not isinstance(formula, str):
@@ -128,7 +84,7 @@ def _packet_creation(model, description, features, target, formula, metrics): ##
     if len(formula.strip()) == 0:
         raise ValueError("formula cannot be empty string")
     
-    # Validate metrics
+    # Validate metrics - must be non-empty dict
     if metrics is None:
         raise ValueError("metrics cannot be None")
     if not isinstance(metrics, dict):
@@ -136,7 +92,7 @@ def _packet_creation(model, description, features, target, formula, metrics): ##
     if len(metrics) == 0:
         raise ValueError("metrics cannot be empty")
     
-    # Build packet dictionary
+    # Build packet dictionary with model and metadata
     try:
         packet = {
             "model": model,
@@ -150,11 +106,11 @@ def _packet_creation(model, description, features, target, formula, metrics): ##
     except Exception as e:
         raise RuntimeError(f"Error building packet dictionary: {str(e)}")
     
-    # Serialize to in-memory buffer
+    # Serialize packet to in-memory binary buffer
     try:
         buffer = io.BytesIO()
         joblib.dump(packet, buffer)
-        buffer.seek(0)
+        buffer.seek(0)  # Position at start for reading
         
         # Validate buffer is not empty
         buffer_size = buffer.getbuffer().nbytes

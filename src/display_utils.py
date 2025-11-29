@@ -1,19 +1,29 @@
+"""Data visualization and display utilities for model results.
+
+This module provides functions for rendering DataFrames with syntax highlighting,
+visualizing model performance metrics, and plotting 1D/3D regression results.
+All functions include type hints and comprehensive docstrings.
+"""
+
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
+from data_preprocess import *
+from typing import List, Optional, Any
+import pandas as pd
 
 
-def display_dataframe():
+def display_dataframe() -> None:
     """Render a preview of the active DataFrame with a selectable row window.
 
-    The function displays a slice of **st.session_state.df** and, if
-    **st.session_state.processed_data** exists, substitutes the selected
+    The function displays a slice of st.session_state.df and, if
+    st.session_state.processed_data exists, substitutes the selected
     features/target columns with the processed values. It offers a
     100-row-window selector to avoid rendering very large tables.
 
     Side effects:
-        Reads from **st.session_state** keys: **df**, **processed_data**,
-        **features**, **target** and writes to the Streamlit UI.
+        Reads from st.session_state keys: df, processed_data,
+        features, target and writes to the Streamlit UI.
 
     Returns:
         None: The UI is rendered directly via Streamlit.
@@ -28,8 +38,7 @@ def display_dataframe():
 
     st.markdown("#### Dataset Preview")
 
-    # Row range selector
-    # We show options in 100-row windows to avoid rendering huge tables
+    # Row range selector - show 100-row windows to avoid rendering huge tables
     col1, col2 = st.columns([3, 1])
     with col1:
         available_rows = [
@@ -56,19 +65,26 @@ def display_dataframe():
     st.dataframe(styled_df, use_container_width=True, height=400)
 
 
-def style_dataframe(df, features, target):
+def style_dataframe(
+    df: pd.DataFrame, 
+    features: List[str], 
+    target: List[str]
+) -> Any:
     """Return a pandas Styler that highlights feature and target columns.
+    
+    Applies subtle background colors to distinguish feature columns (blue)
+    from target columns (red) for better visual clarity in DataFrames.
 
     Args:
-        df (pandas.DataFrame): DataFrame slice to style.
-        features (list): List of column names considered features.
-        target (list): List (usually length 1) of column name considered target.
+        df (pd.DataFrame): DataFrame slice to style.
+        features (List[str]): List of column names considered features.
+        target (List[str]): List (usually length 1) of column name considered target.
 
     Returns:
-        pandas.io.formats.style.Styler: Styled DataFrame for display.
+        pandas.io.formats.style.Styler: Styled DataFrame ready for Streamlit display.
     """
-    def highlight_columns(col):
-        # Apply a subtle blue for features, light red for targets
+    def highlight_columns(col: pd.Series) -> List[str]:
+        # Apply subtle blue for features, light red for targets
         if col.name in features:
             return ["background-color: #e3f2fd"] * len(col)
         elif col.name in target:
@@ -79,10 +95,10 @@ def style_dataframe(df, features, target):
     return df.style.apply(highlight_columns)
 
 
-def visualize_results():
+def visualize_results() -> None:
     """Render trained model performance metrics and the model formula.
 
-    Reads the trained model and metrics from **st.session_state** and
+    Reads the trained model and metrics from st.session_state and
     displays R² and MSE for training and, when available, test sets. If the
     app is running with a loaded model packet, metrics and formula are also
     shown via the packet contents.
@@ -487,3 +503,42 @@ def display_uploaded_model():
         st.warning("No metrics information available")
 
     st.divider()
+
+def display_dataset_info(df):
+    """Display basic dataset info in the Streamlit UI and return numeric columns.
+
+    This helper renders basic metrics (rows/columns), warns about missing
+    values and very small datasets, and returns the list of numeric columns
+    available for modeling.
+
+    Args:
+        df (pandas.DataFrame): Dataset to inspect and display.
+
+    Returns:
+        list: Names of numeric columns found in **df**.
+    """
+    available_columns = get_numeric_columns(df)
+    cols_with_na = get_na_info(df)
+
+    # Show basic metrics of the dataset
+    col1, col2 = st.columns(2)
+    col1.metric("Rows", len(df))
+    col2.metric("Cols", len(df.columns))
+
+    # Show warning of missing values
+    if cols_with_na:
+        # Limit the list of the first 3 columns to avoid saturating the UI
+        na_list = ', '.join(cols_with_na[:3])
+        suffix = ' ...' if len(cols_with_na) > 3 else ''
+        st.caption(f"**Columns with NA values:** {na_list}{suffix}")
+
+    # Warn if the dataset is too small to do a split train/test
+    if len(df) < 10:
+        msg = ("WARNING: Dataset too small. Training set will contain "
+                "all data, resulting in empty test set.")
+        st.warning(msg)
+        # Flag to use 100% of data in training
+        st.session_state.trainset_only = True
+
+    st.divider()
+    return available_columns
