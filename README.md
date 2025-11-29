@@ -15,7 +15,7 @@
 - [Usage](#usage)
 - [Feedback and Contributions](#feedback-and-contributions)
 - [License](#license)
-- [Support](#support-us)
+- [Support](#support)
 - [Contacts](#contacts)
 
 ---
@@ -53,7 +53,7 @@ This project is ideal for students learning linear regression, beginner programm
 
 ---
 
-## How to Install
+## Installation
 
 Start using ModeLine with the following steps:
   
@@ -103,7 +103,7 @@ This software is licensed under the [MIT LICENSE](https://github.com/YareBE/Mode
 
 ---
 
-## Suppport us
+## Suppport
 
 Si te gusta este proyecto y deseas apoya su desarrollo, puedes hacerlo aquí:
 
