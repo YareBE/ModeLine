@@ -12,7 +12,6 @@ from data_preprocess import *
 from model_trainer import *
 from display_utils import *
 from model_serializer import *
-from typing import Optional, List, Dict, Any
 
 
 class Interface:
@@ -70,7 +69,7 @@ class Interface:
         for key, value in defaults.items():
             if key not in st.session_state:
                 st.session_state[key] = value
-    
+
     def reset_downstream_selections(self, level):
         """Reset downstream session state variables when upstream choices change.
 
@@ -100,7 +99,6 @@ class Interface:
             keys_to_reset = ["description", "model"]
             for key in keys_to_reset:
                 st.session_state[key] = None
-
 
     def render_sidebar(self):
         """Render the Streamlit sidebar containing the workflow controls.
@@ -143,7 +141,6 @@ class Interface:
                     st.subheader("5️⃣ Split")
                     self.set_split()
 
-
     def render_main_content(self):
         """Render the main application area (data preview, training, results).
 
@@ -180,7 +177,7 @@ class Interface:
                 8. Save it in your device (if desired)
             """)
             return
-        
+
         # Display data preview
         display_dataframe()
 
@@ -215,7 +212,7 @@ class Interface:
             # Display scatter plots comparing predictions vs actual values
             plot_results()
 
-        # Store model section 
+        # Store model section
         # Always visible if model exists, independent of reruns
         if st.session_state.model is not None:
             self.store_model()
@@ -248,25 +245,26 @@ class Interface:
                     # Reset selection lists to empty
                     st.session_state[key] = []
                 elif key in ["processed_data", "description", "model", "na_method",
-                            "df", "loaded_packet"]:
+                             "df", "loaded_packet"]:
                     # Reset objects to None
                     st.session_state[key] = None
-            
+            st.session_state["trainset_only"] = False
+
             # Store uploaded file reference
             st.session_state.file = uploaded_file
             if uploaded_file is None:
                 return None
-            
+
             # Extract file extension for format detection
             extension = uploaded_file.name.split('.')[-1].lower()
             if extension != "joblib":
                 try:
                     # Handle datafile (CSV, Excel and SQLite)
                     df = dataset_error_handler(uploaded_file, extension)
-                
+
                 except Exception as e:
                     st.error(f"{e}. Try a new file.")
-            
+
                 else:
                     with st.spinner("Loading data..."):
                         # Store DataFrame in session state
@@ -277,18 +275,18 @@ class Interface:
                 with st.spinner("Loading data..."):
                     try:
                         # Load serialized model packet
-                        st.session_state.loaded_packet = upload_joblib(uploaded_file)
+                        st.session_state.loaded_packet = upload_joblib(
+                            uploaded_file)
 
                     except InvalidJoblibPacket as e:
                         st.error(e)
 
-                    else:             
+                    else:
                         # Store model name without extension
                         st.session_state.model_name = (
                             uploaded_file.name.replace('.joblib', '')
                         )
                         st.success("✅ Model correctly loaded.")
-
 
     def parameters_selection(self, df):
         """Render UI controls in Streamlit to select features and target.
@@ -317,7 +315,6 @@ class Interface:
             st.info("Select features and target")
             return
 
-
     def _features_selection(self, available_columns):
         """Render the feature selection control in the sidebar.
 
@@ -331,13 +328,12 @@ class Interface:
             "Training Features (Numeric)",
             # Exclude the actual target from the options
             options=[col for col in available_columns
-                    if col != st.session_state.target],
+                     if col != st.session_state.target],
             help="Select training features",
             # Reset processing downstream when features are changed
             on_change=lambda: self.reset_downstream_selections(2),
             key="features"
         )
-
 
     def _target_selection(self, available_columns):
         """Render the target variable selection control in the sidebar.
@@ -349,7 +345,7 @@ class Interface:
         """
         # Exclude the selected features
         target_options = [col for col in available_columns
-                        if col not in st.session_state.features]
+                          if col not in st.session_state.features]
 
         # Validation: There must be at least one column for target
         if not target_options:
@@ -367,8 +363,6 @@ class Interface:
             key="target"
         )
 
-
-
     def na_handling_selection(self):
         """Provide UI to inspect and handle missing values for selected subset.
 
@@ -385,25 +379,25 @@ class Interface:
         ]
         # Count the total NA values in all the subset
         na_count = selected_data.isna().sum().sum()
-        
+
         # Just show a warning if there are NAs and they have been not processed
         if na_count > 0 and st.session_state.processed_data is None:
             st.warning(f"⚠️ {na_count} missing values")
-            
+
             # Selector of imputation method
             na_method = st.selectbox(
                 "Filling method",
                 options=["Select method...", "Delete rows", "Mean",
-                        "Median", "Constant"]
+                         "Median", "Constant"]
             )
             st.session_state.na_method = na_method
             constant_value = None
-            
+
             # If the Constant method is selected, ask for the value
             if na_method == "Constant":
                 constant_value = st.text_input("Constant value")
-            
-            # Button to apply the selected method 
+
+            # Button to apply the selected method
             if st.button("Apply", type="primary", use_container_width=True):
                 # Validation: there must be a selected method
                 if na_method == "Select method...":
@@ -429,7 +423,6 @@ class Interface:
                 st.session_state.processed_data = selected_data
             return
 
-
     def set_split(self):
         """Render controls for train/test split and display split metrics.
 
@@ -440,7 +433,7 @@ class Interface:
         **st.session_state.trainset_only**.
         """
         df = st.session_state.processed_data
-        
+
         # If the dataset is not too small, allow split configuration
         if not st.session_state.trainset_only:
             col1, col2 = st.columns([1, 4])
@@ -455,7 +448,7 @@ class Interface:
                     # Reset the model when split changes
                     on_change=lambda: self.reset_downstream_selections(3)
                 )
-            
+
             # Column 2: Slider to select percentage of train
             with col2:
                 st.slider(
@@ -477,7 +470,7 @@ class Interface:
         total_rows = len(df)
         train_rows = int(total_rows * st.session_state.train_size / 100)
         test_rows = total_rows - train_rows
-        
+
         # Show split metrics
         col1, col2 = st.columns(2)
         col1.metric("Train rows", f"{train_rows}")
@@ -499,22 +492,23 @@ class Interface:
 
         if not features or not target:
             st.error("Features or target not found in session state")
-            return  
-        
-        model = st.session_state.get("model") or st.session_state.loaded_packet.get("model")
+            return
+
+        model = st.session_state.get(
+            "model") or st.session_state.loaded_packet.get("model")
         if model is None:
             st.error("No model found. Train or load a model first")
             return
-        
+
         columns = {}
         for i in range(len(features)):
             if i % 4 == 0:
-                columns[str(i//4)] = st.columns(np.ones(4))
+                columns[str(i // 4)] = st.columns(np.ones(4))
         inputs = np.ones(len(features))
 
         for name in features:
             index = features.index(name)
-            with columns[str(index//4)][index % 4]:
+            with columns[str(index // 4)][index % 4]:
                 inputs[index] = st.number_input(name, value=1.0, step=0.1)
 
         if st.button("PREDICT", type="primary"):
@@ -544,7 +538,7 @@ class Interface:
             # Extract features and target from processed data
             X = st.session_state.processed_data[st.session_state.features]
             y = st.session_state.processed_data[st.session_state.target]
-            
+
             # Train model
             if not st.session_state.trainset_only:
                 # Normal split: use user-configured train percentage and seed
@@ -559,25 +553,31 @@ class Interface:
             (st.session_state.X_train, st.session_state.X_test,
              st.session_state.y_train, st.session_state.y_test) = (
                  split_dataset(X, y, train_ratio, seed)
-                
+
             )
 
             # Train model and store in session state
-            st.session_state.model = train_linear_regression(st.session_state.X_train,
-                                            st.session_state.y_train)
+            st.session_state.model = train_linear_regression(
+                st.session_state.X_train, st.session_state.y_train)
 
             # Evaluate model and store metrics and predictions
-            (st.session_state.y_train_pred, st.session_state.y_test_pred, \
-            st.session_state.metrics, ) = evaluate_model(st.session_state.model, \
-                st.session_state.X_train, st.session_state.y_train, \
-                st.session_state.X_test, st.session_state.y_test)
+            (st.session_state.y_train_pred,
+             st.session_state.y_test_pred,
+             st.session_state.metrics,
+             ) = evaluate_model(st.session_state.model,
+                                st.session_state.X_train,
+                                st.session_state.y_train,
+                                st.session_state.X_test,
+                                st.session_state.y_test)
 
             # Generate and store a readable formula
-            st.session_state.formula = generate_formula(st.session_state.model, \
-                    st.session_state.features, st.session_state.target[0])
+            st.session_state.formula = generate_formula(
+                st.session_state.model,
+                st.session_state.features,
+                st.session_state.target[0])
 
             st.balloons()
-    
+
     def store_model(self):
         """Render UI to download the trained model and its metadata as joblib.
 
@@ -603,17 +603,17 @@ class Interface:
 
         # Create a two column display for input fields
         col1, col2 = st.columns([2, 1])
-        
+
         # Column 1: Description text area
         with col1:
             # Optional description to help users remember purpose and context
             st.text_area(
                 "Description (optional but recommended)",
                 placeholder='Example: "Model for predicting body weight"',
-                height=80, 
-                key = "description"
+                height=80,
+                key="description"
             )
-        
+
         # Column 2: Filename input
         with col2:
             # Filename input with default value
@@ -627,17 +627,22 @@ class Interface:
             st.error("❌ File name cannot be empty!")
             return
 
-        try:    
-            buffer = packet_creation(st.session_state.model, st.session_state.description, st.session_state.features, 
-                        st.session_state.target, st.session_state.formula, st.session_state.metrics)
+        try:
+            buffer = packet_creation(
+                st.session_state.model,
+                st.session_state.description,
+                st.session_state.features,
+                st.session_state.target,
+                st.session_state.formula,
+                st.session_state.metrics)
             # Create download button with serialized data
             if st.download_button(
                 label="⬇️ DOWNLOAD MODEL",
                 data=buffer.getvalue(),           # Get bytes from buffer
                 file_name=f"{filename}.joblib",   # Append .joblib extension
                 mime="application/octet-stream",  # Binary file type
-                type="primary",                 
-                use_container_width=True        
+                type="primary",
+                use_container_width=True
             ):
                 st.success(f"✅ Model {filename} downloaded correctly!")
 

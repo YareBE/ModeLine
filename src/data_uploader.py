@@ -10,7 +10,6 @@ All functions include type hints, comprehensive docstrings, and robust error han
 
 import pandas as pd
 import sqlite3
-import streamlit as st
 import joblib
 from typing import BinaryIO, Dict, Any
 
@@ -50,7 +49,7 @@ def dataset_error_handler(file: BinaryIO, extension: str) -> pd.DataFrame:
             data = _upload_sql(file)
         else:
             raise ValueError(f"Unsupported file extension: {extension}")
-    
+
     except Exception as err:
         raise Exception(err)
 
@@ -78,27 +77,31 @@ def _upload_csv(file: BinaryIO) -> pd.DataFrame:
     """
     try:
         data = pd.read_csv(file)
-    
+
     except UnicodeDecodeError:
         # pd.read_csv expects UTF-8 by default, fall back to latin-1
         file.seek(0)
         try:
             data = pd.read_csv(file, encoding='latin-1')
         except UnicodeDecodeError:
-            raise UnicodeDecodeError("utf-8", b"", 0, 1,
+            raise UnicodeDecodeError(
+                "utf-8",
+                b"",
+                0,
+                1,
                 "Error while decoding the csv. ModeLine expects UTF-8 or latin-1")
-    
+
     except pd.errors.EmptyDataError:
         # Specific error for empty CSV files
         raise pd.errors.EmptyDataError("CSV file is empty")
-    
+
     except pd.errors.ParserError as e:
         # Parsing errors (malformed CSV, encoding issues, etc.)
         raise pd.errors.ParserError(f"Error parsing CSV: {str(e)}")
-    
+
     except Exception as e:
         raise ValueError(f"Error reading csv file: {str(e)}")
-    
+
     else:
         # Convert all column names to strings (handles numeric/mixed types)
         data.columns = data.columns.map(str)
@@ -107,7 +110,7 @@ def _upload_csv(file: BinaryIO) -> pd.DataFrame:
 
 def _upload_excel(file: BinaryIO) -> pd.DataFrame:
     """Read an Excel file into a DataFrame using openpyxl engine.
-    
+
     Loads the first sheet of an Excel workbook and converts column names
     to strings for consistency with other data loaders.
 
@@ -123,15 +126,15 @@ def _upload_excel(file: BinaryIO) -> pd.DataFrame:
     try:
         # Use openpyxl engine for modern Excel format (.xlsx) support
         data = pd.read_excel(file, engine='openpyxl')
-    
+
     except pd.errors.EmptyDataError:
         # Specific error for empty Excel files
         raise pd.errors.EmptyDataError("Excel file is empty")
-        
+
     except Exception as e:
         # Catch all Excel-related errors (corrupted file, wrong format, etc.)
         raise ValueError(f"Error reading Excel file: {str(e)}")
-    
+
     else:
         # Convert all column names to strings
         data.columns = data.columns.map(str)
@@ -166,29 +169,30 @@ def _upload_sql(file: BinaryIO) -> pd.DataFrame:
 
         # Validate that at least one table exists
         if tables.empty:
-            raise pd.errors.EmptyDataError("No tables found in SQLite database")
-        
+            raise pd.errors.EmptyDataError(
+                "No tables found in SQLite database")
+
         # Get name of first table
         table = tables.iloc[0, 0]
         # Read entire table into DataFrame
         data = pd.read_sql_query(f"SELECT * FROM {table}", conn)
-    
+
     except Exception as e:
         # Catch all SQLite related errors
         raise ValueError(f"Error reading SQLite file: {str(e)}")
-    
+
     else:
         # Convert all column names to strings
         data.columns = data.columns.map(str)
         return data
-    
+
     finally:
         conn.close()
 
 
 def upload_joblib(file: BinaryIO) -> Dict[str, Any]:
     """Load a joblib-serialized ModeLine model packet from file.
-    
+
     Deserializes a joblib binary file and validates it contains a ModeLine
     model packet (checks for 'app' key with value 'ModeLine'). Returns the
     packet dictionary containing model, features, target, metrics, etc.
@@ -215,7 +219,7 @@ def upload_joblib(file: BinaryIO) -> Dict[str, Any]:
 
     except Exception as e:
         raise ValueError(f"Unexpected error reading joblib file: {str(e)}")
-    
+
     else:
         # Validate this is a ModeLine packet
         if not packet.get("app") or packet.get("app") != 'ModeLine':

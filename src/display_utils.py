@@ -9,7 +9,7 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from data_preprocess import *
-from typing import List, Optional, Any
+from typing import List, Any
 import pandas as pd
 
 
@@ -66,12 +66,12 @@ def display_dataframe() -> None:
 
 
 def style_dataframe(
-    df: pd.DataFrame, 
-    features: List[str], 
+    df: pd.DataFrame,
+    features: List[str],
     target: List[str]
 ) -> Any:
     """Return a pandas Styler that highlights feature and target columns.
-    
+
     Applies subtle background colors to distinguish feature columns (blue)
     from target columns (red) for better visual clarity in DataFrames.
 
@@ -188,7 +188,7 @@ def plot_results():
         # Create specialized plots for 1 or 2 features
         if n_features == 1:
             fig = _create_1d_plot(X_train, X_test, y_train, y_test,
-                                y_train_pred, model)
+                                  y_train_pred, model)
             st.plotly_chart(fig, use_container_width=True)
             st.divider()
         elif n_features == 2:
@@ -238,7 +238,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
 
     y_train_pred = y_train_pred.ravel()
     y_train = y_train.values.ravel()
-    
+
     def_fig.add_trace(
         make_trace(
             y_train, y_train_pred,
@@ -280,9 +280,9 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
 
     def_fig.update_layout(
         title='Actual vs Predicted Values',
-        xaxis_title='Actual', 
+        xaxis_title='Actual',
         yaxis_title='Predicted',
-        template='plotly_white', 
+        template='plotly_white',
         height=700,
         yaxis=dict(scaleanchor="x", scaleratio=1)
     )
@@ -316,7 +316,7 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
     # Scatter points for test set (if present)
     if not st.session_state.trainset_only:
         fig.add_trace(make_trace(
-            x_train, y_train_vals,   
+            x_train, y_train_vals,
             name='Test', color='#A23B72', size=6, opacity=0.7, symbol='x'
         ))
 
@@ -326,9 +326,9 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
     y_pred_range = model.predict(X_range)
 
     fig.add_trace(go.Scattergl(
-        x=X_range.ravel(), 
+        x=X_range.ravel(),
         y=y_pred_range.ravel(),
-        mode='lines', 
+        mode='lines',
         name='Regression',
         line=dict(color='#F18F01', width=3)
     ))
@@ -337,7 +337,7 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
         title="Linear Regression: Feature vs Target",
         xaxis_title=X_train.columns[0],
         yaxis_title=y_train.columns[0],
-        template='plotly_white', 
+        template='plotly_white',
         height=600
     )
 
@@ -360,7 +360,7 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
     Returns:
         plotly.graph_objects.Figure: 3D scatter and surface figure.
     """
-    
+
     def make_trace(x, y, z, name, color, size=3, opacity=0.7, symbol=None):
         return go.Scatter3d(
             x=x, y=y, z=z,
@@ -504,6 +504,7 @@ def display_uploaded_model():
 
     st.divider()
 
+
 def display_dataset_info(df):
     """Display basic dataset info in the Streamlit UI and return numeric columns.
 
@@ -535,7 +536,7 @@ def display_dataset_info(df):
     # Warn if the dataset is too small to do a split train/test
     if len(df) < 10:
         msg = ("WARNING: Dataset too small. Training set will contain "
-                "all data, resulting in empty test set.")
+               "all data, resulting in empty test set.")
         st.warning(msg)
         # Flag to use 100% of data in training
         st.session_state.trainset_only = True

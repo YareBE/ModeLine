@@ -13,7 +13,7 @@ import pandas as pd
 @st.cache_data(show_spinner=False)
 def get_numeric_columns(df: pd.DataFrame) -> List[str]:
     """Return the list of numeric column names from a DataFrame.
-    
+
     Inspects a DataFrame and returns column names containing numeric data types
     (int, float, etc.). Excludes columns with object, string, or categorical types.
 
@@ -29,7 +29,7 @@ def get_numeric_columns(df: pd.DataFrame) -> List[str]:
 @st.cache_data(show_spinner=False)
 def get_na_info(df: pd.DataFrame) -> List[str]:
     """Return a list of columns that contain missing values.
-    
+
     Scans the DataFrame to identify any columns with NaN/None values
     and returns their names. Useful for deciding NA handling strategy.
 
@@ -45,12 +45,12 @@ def get_na_info(df: pd.DataFrame) -> List[str]:
 
 @st.cache_data(show_spinner=False)
 def apply_na_handling(
-    df: pd.DataFrame, 
-    method: str, 
+    df: pd.DataFrame,
+    method: str,
     constant_value: Optional[Union[int, float]] = None
 ) -> pd.DataFrame:
     """Apply a missing-value handling strategy to a DataFrame.
-    
+
     Implements multiple strategies for handling NAs including row deletion,
     mean/median imputation for numeric columns, or constant value filling.
     Returns a copy of the DataFrame; original is not modified.
@@ -91,8 +91,7 @@ def apply_na_handling(
                     return df.fillna(value)
                 except (ValueError, TypeError):
                     raise ValueError(
-                        f"Constant value must be numeric, got: {constant_value}"
-                    )
+                        f"Constant value must be numeric, got: {constant_value}")
         # If method not recognized, return original copy unchanged
         return df
     except Exception as e:
