@@ -1,4 +1,4 @@
-name: Python CI
+name: Streamlit App CI
 
 on:
   push:
@@ -7,34 +7,37 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"] 
-
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' 
+      - name: Install linter
+        run: pip install autopep8
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install autopep8 pytest
+      - name: Check code style
+        run: autopep8 --diff --exit-code --recursive .
 
-    - name: Run autopep8 (Linter Check)
-      run: |
-        # --diff muestra los cambios que haría
-        # --exit-code hace que el CI falle si hay código mal formateado
-        # --recursive escanea todo el directorio actual
-        autopep8 --diff --exit-code --recursive .
+  tests:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
 
-    - name: Run tests with pytest
-      run: |
-        pytest
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Run tests
+        run: pytest
