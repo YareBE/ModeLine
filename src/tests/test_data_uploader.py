@@ -4,8 +4,8 @@ import numpy as np
 from io import BytesIO
 from unittest.mock import Mock, patch
 import joblib
-from src.data_uploader import _upload_csv, _upload_excel, dataset_error_handler
-
+from data_uploader import _upload_csv, _upload_excel, dataset_error_handler
+#hay que añadir los archivos excel y csv de prueba de la carpeta de datos
 
 class TestUploadCsv:
     """Tests para _upload_csv()."""
