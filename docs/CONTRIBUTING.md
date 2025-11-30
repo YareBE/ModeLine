@@ -15,13 +15,19 @@ If you have the status of collaborator, you can directly modify the main branch 
 
 On the other hand, if you are just a visitor of the project, and want to change, fix something or add new features, you must follow the steps described above. Once you try to push, a "fork creation" option will be suggested to you.
 
-This will create an exact copy of the github repo under your account and, from there, you can open a "pull request". This request will appear in the original main and an authorized person can decide whether to accept, discard or integrate ir partially.
+This will create an exact copy of the github repo under your account and, from there, you can open a "pull request". This request will appear in the original main and an authorized person can decide whether to accept, discard or integrate ir partially. It is important to keep the main branch always functional
 
 ## Working policies
-Contributors are encouraged to create various branches, each one operating with different aspects (refactoring, updating docs, adding a new feature, experimenting...), thus providing a dynamic environment. The main branch should always be completely functional.
+Contributors are encouraged to create various branches, each one operating with different aspects (refactoring, updating docs, adding a new feature, experimenting...), thus providing a dynamic environment.
+
 It is desirable (but not mandatory) to follow the branches naming convention in the next link: https://www.geeksforgeeks.org/git/how-to-naming-conventions-for-git-branches.
 
 It is also preferable to write commits after an extended and well-known standard: https://www.conventionalcommits.org/en/v1.0.0
+
+## Continuous Integration
+We use GitHub Actions workflow for CI consisting of an autopep8 and pytest filter.
+Whereas contributors do not need to worry about applying autopep8 when commiting (it is automated), every pytest failed test must be manually handled.
+
 
 ## Documentation
 When updating any markdown file, it is important to stick to its set of rules and being rigorous with the format and information displayed.
