@@ -74,3 +74,28 @@ class TestGetNumericColumns:
         df = pd.DataFrame({'a': [1, 2], 'b': [3.0, 4.0], 'c': [5, 6]})
         result = get_numeric_columns(df)
         assert len(result) == 3
+
+
+
+class TestGetNaInfo:
+    """Tests para get_na_info()."""
+    
+    def test_identifies_columns_with_na(self, sample_df):
+        """Debe identificar columnas con valores NA."""
+        result = get_na_info(sample_df)
+        assert set(result) == {'age', 'salary'}
+    
+    def test_no_missing_values(self, clean_df):
+        """Debe retornar lista vacía si no hay NA."""
+        result = get_na_info(clean_df)
+        assert result == []
+    
+    def test_all_columns_with_na(self):
+        """Debe detectar cuando todas las columnas tienen NA."""
+        df = pd.DataFrame({
+            'a': [1, np.nan],
+            'b': [np.nan, 2],
+            'c': [np.nan, np.nan]
+        })
+        result = get_na_info(df)
+        assert len(result) == 3
