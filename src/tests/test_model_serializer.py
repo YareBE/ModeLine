@@ -4,7 +4,8 @@ import io
 import joblib
 from sklearn.linear_model import LinearRegression
 from model_serializer import packet_creation
-import threading #Used for catching an exception 
+import threading  # Used for catching an exception
+
 
 @pytest.fixture
 def model_mock():
@@ -15,16 +16,17 @@ def model_mock():
     model.fit(X_stub, y_stub)
     return model
 
+
 def test_valid_packet(model_mock):
     """Test for creating a packet with valid parameters"""
 
     valid_buffer = packet_creation(
-        model_mock, 
-        "qwerty", 
-        ["apple", "banana"], 
-        ["grape"], 
-        "e = mc2", 
-        {"train":{'r':1, 'mse': 2}, "test":{'r':3, 'mse':4}}
+        model_mock,
+        "qwerty",
+        ["apple", "banana"],
+        ["grape"],
+        "e = mc2",
+        {"train": {'r': 1, 'mse': 2}, "test": {'r': 3, 'mse': 4}}
     )
     assert isinstance(valid_buffer, io.BytesIO)
 
@@ -34,54 +36,59 @@ def test_valid_packet(model_mock):
     except Exception as e:
         pytest.fail(f"The buffer did not store a joblib file. Error: {e}")
 
+
 def test_unexisting_model():
     """Test for creating a packet with no model"""
-    with pytest.raises(ValueError, match = "Model must exist"):
+    with pytest.raises(ValueError, match="Model must exist"):
         packet_creation(
-        None, #
-        "qwerty", 
-        ["apple", "banana"], 
-        ["grape"], 
-        "e = mc2", 
-        {"train":{'r':1, 'mse': 2}, "test":{'r':3, 'mse':4}}
-    )
-        
+            None,
+            "qwerty",
+            ["apple", "banana"],
+            ["grape"],
+            "e = mc2",
+            {"train": {'r': 1, 'mse': 2}, "test": {'r': 3, 'mse': 4}}
+        )
+
+
 def test_unfitted_model():
     """Test for creating a packet with an unfitted model"""
-    with pytest.raises(ValueError, match = "Model must be fitted"):
+    with pytest.raises(ValueError, match="Model must be fitted"):
         packet_creation(
-        LinearRegression(), #
-        "qwerty", 
-        ["apple", "banana"], 
-        ["grape"], 
-        "e = mc2", 
-        {"train":{'r':1, 'mse': 2}, "test":{'r':3, 'mse':4}}
-    )
-        
+            LinearRegression(),
+            "qwerty",
+            ["apple", "banana"],
+            ["grape"],
+            "e = mc2",
+            {"train": {'r': 1, 'mse': 2}, "test": {'r': 3, 'mse': 4}}
+        )
+
+
 def test_invalid_description(model_mock):
     """Test for creating a packet with an invalid description"""
-    with pytest.raises(TypeError, match = "description must be"):
+    with pytest.raises(TypeError, match="description must be"):
         packet_creation(
-        model_mock, 
-        18, #
-        ["apple", "banana"], 
-        ["grape"], 
-        "e = mc2", 
-        {"train":{'r':1, 'mse': 2}, "test":{'r':3, 'mse':4}}
-    )
+            model_mock,
+            18,
+            ["apple", "banana"],
+            ["grape"],
+            "e = mc2",
+            {"train": {'r': 1, 'mse': 2}, "test": {'r': 3, 'mse': 4}}
+        )
+
 
 def test_unexisting_features(model_mock):
     """Test for creating a packet with no features"""
-    with pytest.raises(ValueError, match = "cannot be None"):
+    with pytest.raises(ValueError, match="cannot be None"):
         packet_creation(
-        model_mock, 
-        "qwerty", 
-        [], #
-        ["grape"], 
-        "e = mc2", 
-        {"train":{'r':1, 'mse': 2}, "test":{'r':3, 'mse':4}}
-    )
-        
+            model_mock,
+            "qwerty",
+            [],
+            ["grape"],
+            "e = mc2",
+            {"train": {'r': 1, 'mse': 2}, "test": {'r': 3, 'mse': 4}}
+        )
+
+
 def test_invalid_target_length(model_mock):
     """Test target validation: must be exactly one element"""
     with pytest.raises(ValueError, match="target must contain exactly 1 element"):
@@ -89,10 +96,11 @@ def test_invalid_target_length(model_mock):
             model_mock,
             "qwerty",
             ["feature1"],
-            ["target1", "target2"], #
+            ["target1", "target2"],
             "e = mc2",
             {"train": {'r': 1}}
         )
+
 
 def test_target_type_mismatch(model_mock):
     """Test target validation: must be a list, not a string"""
@@ -101,10 +109,11 @@ def test_target_type_mismatch(model_mock):
             model_mock,
             "qwerty",
             ["feature1"],
-            "target_string", #
+            "target_string",
             "e = mc2",
             {"train": {'r': 1}}
         )
+
 
 def test_empty_formula(model_mock):
     """Test formula validation: cannot be empty or whitespace"""
@@ -118,6 +127,7 @@ def test_empty_formula(model_mock):
             {"train": {'r': 1}}
         )
 
+
 def test_invalid_formula(model_mock):
     """Test formula validation: must be a str"""
     with pytest.raises(TypeError, match="must be str"):
@@ -130,6 +140,7 @@ def test_invalid_formula(model_mock):
             {"train": {'r': 1}}
         )
 
+
 def test_empty_metrics(model_mock):
     """Test metrics validation: cannot be an empty dict"""
     with pytest.raises(ValueError, match="metrics cannot be empty"):
@@ -141,6 +152,7 @@ def test_empty_metrics(model_mock):
             "formula",
             {}  #
         )
+
 
 def test_serialization_failure(model_mock):
     """tries to serialize an 'unserializable' object"""
@@ -156,19 +168,3 @@ def test_serialization_failure(model_mock):
             "formula",
             corrupted
         )
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-        

@@ -26,7 +26,7 @@ It is also preferable to write commits after an extended and well-known standard
 
 ## Continuous Integration
 We use GitHub Actions workflow for CI consisting of an autopep8 (code cleaning) and pytest filter.
-Whereas contributors do not need to worry about applying autopep8 when commiting (it is automated), any pytest failed test will deny the pull request and the errors will need to be manually handled.
+Any pytest failed test or not autopep8-formatted code will result in a denial of the pull request and the errors must then be MANUALLY handled.
 
 
 ## Documentation
