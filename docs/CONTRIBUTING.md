@@ -8,7 +8,7 @@ In order to bring the repository to your local IDE you must clone the url, eithe
 "git clone 'https://github.com/YareBE/ModeLine'".
 Use "git fetch" or "git pull" (fetch + merge) to update your local repository with its latest version on github.
 
-For anything interface-related, take a look at [Streamlit's official documentation](https://docs.streamlit.io/)
+For anything GUI-related, take a look at [Streamlit's official documentation](https://docs.streamlit.io/)
 
 ## Pull and push:
 If you have the status of collaborator, you can directly modify the main branch by staging (git add 'file') the changes, commiting (git commit -m 'Message') and pushing the changes to github from the branch you want (for instance, git push origin 'branch')
@@ -25,8 +25,8 @@ It is desirable (but not mandatory) to follow the branches naming convention in 
 It is also preferable to write commits after an extended and well-known standard: https://www.conventionalcommits.org/en/v1.0.0
 
 ## Continuous Integration
-We use GitHub Actions workflow for CI consisting of an autopep8 and pytest filter.
-Whereas contributors do not need to worry about applying autopep8 when commiting (it is automated), every pytest failed test must be manually handled.
+We use GitHub Actions workflow for CI consisting of an autopep8 (code cleaning) and pytest filter.
+Whereas contributors do not need to worry about applying autopep8 when commiting (it is automated), any pytest failed test will deny the pull request and the errors will need to be manually handled.
 
 
 ## Documentation
