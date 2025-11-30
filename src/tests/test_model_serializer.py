@@ -8,6 +8,7 @@ import threading #Used for catching an exception
 
 @pytest.fixture
 def model_mock():
+    """Create a mock of a sklearn linear regression model"""
     model = LinearRegression()
     X_stub = np.array([[1, 2], [3, 4], [5, 6]])
     y_stub = np.array([4, 6, 8])

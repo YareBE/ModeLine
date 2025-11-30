@@ -548,13 +548,15 @@ class Interface:
                 # Small dataset: use all data for training
                 train_ratio = 1
                 seed = 0
+            try:
+                # Store train/test subsets in session state
+                (st.session_state.X_train, st.session_state.X_test,
+                st.session_state.y_train, st.session_state.y_test) = (
+                    split_dataset(X, y, train_ratio, seed)
 
-            # Store train/test subsets in session state
-            (st.session_state.X_train, st.session_state.X_test,
-             st.session_state.y_train, st.session_state.y_test) = (
-                 split_dataset(X, y, train_ratio, seed)
-
-            )
+                )
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
 
             # Train model and store in session state
             st.session_state.model = train_linear_regression(
