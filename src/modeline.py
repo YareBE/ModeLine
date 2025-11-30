@@ -551,7 +551,7 @@ class Interface:
             try:
                 # Store train/test subsets in session state
                 (st.session_state.X_train, st.session_state.X_test,
-                st.session_state.y_train, st.session_state.y_test) = (
+                 st.session_state.y_train, st.session_state.y_test) = (
                     split_dataset(X, y, train_ratio, seed)
 
                 )

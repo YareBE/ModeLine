@@ -63,7 +63,7 @@ def packet_creation(
     elif not isinstance(description, str):
         raise TypeError(
             f"description must be str, got "
-                f"{type(description).__name__}")
+            f"{type(description).__name__}")
 
     # Validate features - must be non-empty list/tuple of strings
     if features is None or (
@@ -88,7 +88,7 @@ def packet_creation(
     if len(target) != 1:
         raise ValueError(
             f"target must contain exactly 1 element, got "
-                f"{len(target)}")
+            f"{len(target)}")
     if not isinstance(target[0], str):
         raise TypeError("target element must be string")
 

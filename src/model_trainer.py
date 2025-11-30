@@ -128,7 +128,7 @@ def ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame]: Tuple of converted DataFrames (X, y).
-    
+
     Raises:
         TypeError: If X or y have not array-like types or are empty
     """
@@ -138,14 +138,18 @@ def ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
         try:
             X = pd.DataFrame(X)
         except Exception as e:
-            raise TypeError(f"Converting X to DataFrame was not possible: {str(e)}")
+            raise TypeError(
+                f"Converting X to DataFrame was not possible: {
+                    str(e)}")
 
     # Convert y to DataFrame if needed
     if not isinstance(y, pd.DataFrame):
         try:
             y = pd.DataFrame(y)
         except Exception as e:
-            raise TypeError(f"Converting y to DataFrame was not possible: {str(e)}")
+            raise TypeError(
+                f"Converting y to DataFrame was not possible: {
+                    str(e)}")
 
     return X, y
 
@@ -208,7 +212,7 @@ def split_dataset(X: pd.DataFrame,
             X, y, train_size=train_size, random_state=split_seed
         )
         return X_train, X_test, y_train, y_test
-    
+
     except Exception as e:
         raise RuntimeError(f"Runtime error during train/test split: {str(e)}")
 
@@ -238,8 +242,8 @@ def train_linear_regression(
     """
 
     # Validate inputs
-    validate_inputs(X_train, y_train, 0.5) #->Dummy train_size
-    
+    validate_inputs(X_train, y_train, 0.5)  # ->Dummy train_size
+
     # Ensure inputs are DataFrames
     X_train, y_train = ensure_dataframe(X_train, y_train)
 
@@ -299,7 +303,8 @@ def generate_formula(
         formula_parts = [f"{target_name} = "]
 
         # Add each feature coefficient
-        for i, (name, coef) in enumerate(zip(feature_names, coefs, strict=True)):
+        for i, (name, coef) in enumerate(
+                zip(feature_names, coefs, strict=True)):
             if i == 0:
                 # First term doesn't need sign prefix
                 formula_parts.append(f"{coef:.4f} * {name}")
