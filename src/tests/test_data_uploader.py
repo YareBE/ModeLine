@@ -31,3 +31,22 @@ class TestUploadCsv:
         buffer = BytesIO(b"")
         with pytest.raises(ValueError, match="CSV file is empty"):
             _upload_csv(buffer)
+
+
+
+
+
+class TestUploadExcel:
+    """Tests para _upload_excel()."""
+    
+    def test_reads_excel_successfully(self, excel_file):
+        """Debe leer Excel correctamente."""
+        result = _upload_excel(excel_file)
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 3
+        assert list(result.columns) == ['a', 'b']
+    
+    def test_converts_column_names_to_string(self, excel_file):
+        """Debe convertir nombres de columnas a string."""
+        result = _upload_excel(excel_file)
+        assert all(isinstance(col, str) for col in result.columns)
