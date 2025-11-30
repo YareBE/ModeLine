@@ -1,4 +1,4 @@
-from model_trainer import _modeline_prediction, predict
+from model_trainer import predict
 from sklearn.linear_model import LinearRegression
 import pandas as pd
 import streamlit as st

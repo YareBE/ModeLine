@@ -4,7 +4,7 @@ import numpy as np
 from io import BytesIO
 from unittest.mock import Mock, patch
 import joblib
-from src.data_uploader import _upload_csv, _upload_excel, _error_handle
+from src.data_uploader import _upload_csv, _upload_excel, dataset_error_handler
 
 
 class TestUploadCsv:
@@ -50,3 +50,27 @@ class TestUploadExcel:
         """Debe convertir nombres de columnas a string."""
         result = _upload_excel(excel_file)
         assert all(isinstance(col, str) for col in result.columns)
+
+
+
+class TestErrorHandler:
+    """Tests para _error_handler()."""
+    
+    def test_routes_csv_correctly(self, csv_file):
+        """Debe enrutar archivos CSV correctamente."""
+        result = dataset_error_handler(csv_file, 'csv')
+        assert isinstance(result, pd.DataFrame)
+        assert not result.empty
+    
+    def test_routes_excel_correctly(self, excel_file):
+        """Debe enrutar archivos Excel correctamente."""
+        result = dataset_error_handler(excel_file, 'xlsx')
+        assert isinstance(result, pd.DataFrame)
+        assert not result.empty
+    
+    def test_unsupported_extension(self):
+        """Debe manejar extensión no soportada."""
+        buffer = BytesIO(b"test")
+        result = dataset_error_handler(buffer, 'txt')
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
