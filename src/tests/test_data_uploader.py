@@ -4,8 +4,47 @@ import numpy as np
 from io import BytesIO
 from unittest.mock import Mock, patch
 import joblib
-from src.data_uploader import _upload_csv, _upload_excel, dataset_error_handler
+from data_uploader import _upload_csv, _upload_excel, dataset_error_handler
 
+@pytest.fixture
+def sample_df():
+    """DataFrame de ejemplo para pruebas."""
+    return pd.DataFrame({
+        'age': [25, 30, np.nan, 40, 35],
+        'salary': [50000, 60000, 55000, np.nan, 70000],
+        'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
+        'score': [85.5, 90.0, 78.5, 88.0, 92.5]
+    })
+
+
+@pytest.fixture
+def clean_df():
+    """DataFrame sin valores faltantes."""
+    return pd.DataFrame({
+        'x1': [1, 2, 3, 4, 5],
+        'x2': [2, 4, 6, 8, 10],
+        'y': [3, 5, 7, 9, 11]
+    })
+
+
+@pytest.fixture
+def csv_file():
+    """Archivo CSV de ejemplo."""
+    df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
+    buffer = BytesIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
+    return buffer
+
+
+@pytest.fixture
+def excel_file():
+    """Archivo Excel de ejemplo."""
+    df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
+    buffer = BytesIO()
+    df.to_excel(buffer, index=False, engine='openpyxl')
+    buffer.seek(0)
+    return buffer
 
 class TestUploadCsv:
     """Tests para _upload_csv()."""
