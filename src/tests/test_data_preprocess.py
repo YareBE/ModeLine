@@ -99,3 +99,50 @@ class TestGetNaInfo:
         })
         result = get_na_info(df)
         assert len(result) == 3
+
+
+class TestApplyNaHandling:
+    """Tests para apply_na_handling()."""
+    
+    def test_delete_rows_method(self, sample_df):
+        """Debe eliminar filas con NA."""
+        result = apply_na_handling(sample_df, "Delete rows")
+        assert len(result) == 3
+        assert not result.isna().any().any()
+    
+    def test_mean_method(self, sample_df):
+        """Debe rellenar con media en columnas numéricas."""
+        result = apply_na_handling(sample_df, "Mean")
+        assert not result[['age', 'salary']].isna().any().any()
+        # Verificar que la media es correcta
+        expected_age_mean = sample_df['age'].mean()
+        assert result['age'].iloc[2] == expected_age_mean
+    
+    def test_median_method(self, sample_df):
+        """Debe rellenar con mediana en columnas numéricas."""
+        result = apply_na_handling(sample_df, "Median")
+        assert not result[['age', 'salary']].isna().any().any()
+        expected_age_median = sample_df['age'].median()
+        assert result['age'].iloc[2] == expected_age_median
+    
+    def test_constant_method_valid(self, sample_df):
+        """Debe rellenar con constante válida."""
+        result = apply_na_handling(sample_df, "Constant", constant_value=999)
+        assert result['age'].iloc[2] == 999.0
+        assert result['salary'].iloc[3] == 999.0
+    
+    def test_constant_method_invalid_value(self, sample_df):
+        """Debe lanzar ValueError con valor no numérico."""
+        with pytest.raises(ValueError, match="Constant value must be numeric"):
+            apply_na_handling(sample_df, "Constant", constant_value="invalid")
+    
+    def test_unrecognized_method(self, sample_df):
+        """Debe retornar DataFrame sin cambios con método no reconocido."""
+        result = apply_na_handling(sample_df, "UnknownMethod")
+        pd.testing.assert_frame_equal(result, sample_df)
+    
+    def test_does_not_modify_original(self, sample_df):
+        """Debe crear copia sin modificar el original."""
+        original_copy = sample_df.copy()
+        apply_na_handling(sample_df, "Delete rows")
+        pd.testing.assert_frame_equal(sample_df, original_copy)
