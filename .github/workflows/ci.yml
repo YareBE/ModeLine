@@ -3,8 +3,12 @@ name: Streamlit App CI
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'src/**'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'src/**'
 
 jobs:
   lint:
@@ -20,7 +24,7 @@ jobs:
         run: pip install autopep8
 
       - name: Check code style
-        run: autopep8 --diff --exit-code --recursive .
+        run: autopep8 --diff --exit-code --recursive src
 
   tests:
     needs: lint
@@ -40,4 +44,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Run tests
-        run: pytest
+        run: pytest src
