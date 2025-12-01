@@ -7,11 +7,31 @@ docstrings.
 """
 
 import streamlit as st
-from data_uploader import *
-from data_preprocess import *
-from model_trainer import *
-from display_utils import *
-from model_serializer import *
+import numpy as np
+from data_uploader import (
+    dataset_error_handler, 
+    upload_joblib
+)
+from data_preprocess import (
+    apply_na_handling
+)
+from model_trainer import (
+    modeline_prediction,
+    split_dataset,
+    train_linear_regression,
+    generate_formula,
+    evaluate_model
+)
+from display_utils import (
+    display_dataframe,
+    visualize_results,
+    plot_results,
+    display_uploaded_model,
+    display_dataset_info
+)
+from model_serializer import (
+    packet_creation
+)
 
 
 class Interface:
@@ -278,8 +298,8 @@ class Interface:
                         st.session_state.loaded_packet = upload_joblib(
                             uploaded_file)
 
-                    except InvalidJoblibPacket as e:
-                        st.error(e)
+                    except Exception as e:
+                        st.error(f"{e}. Try a new file.")
 
                     else:
                         # Store model name without extension
@@ -301,6 +321,11 @@ class Interface:
         """
         available_columns = display_dataset_info(df)
 
+        if len(available_columns) <= 0:
+            st.error("⚠️ The uploaded dataset doesn't contain numeric " \
+                        "columns. Please load another file.")
+            st.stop()
+        
         # Section to select the features
         st.subheader("2️⃣ Features")
         self._features_selection(available_columns)
@@ -384,12 +409,19 @@ class Interface:
         if na_count > 0 and st.session_state.processed_data is None:
             st.warning(f"⚠️ {na_count} missing values")
 
-            # Selector of imputation method
-            na_method = st.selectbox(
-                "Filling method",
-                options=["Select method...", "Delete rows", "Mean",
-                         "Median", "Constant"]
-            )
+            # Calculate how many rows would be deleted
+            rows_with_na = selected_data.isna().any(axis=1).sum()
+            total_rows = len(selected_data)
+
+            options=["Select method...", "Mean", "Median", "Constant"]
+            if rows_with_na < total_rows:
+                # Some rows are complete, "Delete rows" is safe
+                options.insert(1, "Delete rows")
+            else:
+                # All rows have NA, can't use "Delete rows"
+                st.warning("All rows contain NA values. 'Delete rows' option is disabled.")
+            na_method = st.selectbox("Filling method", options=options)
+
             st.session_state.na_method = na_method
             constant_value = None
 
@@ -441,7 +473,8 @@ class Interface:
             # Column 1: Input the seed for reproducibility
             with col1:
                 st.number_input(
-                    "Seed",
+                    label="Seed",
+                    min_value=0,
                     help="Seed for reproducible split",
                     key="seed",
                     value=1,
@@ -468,7 +501,8 @@ class Interface:
 
         # Calculate the number of rows for each set
         total_rows = len(df)
-        train_rows = int(total_rows * st.session_state.train_size / 100)
+        train_rows = max(1, \
+                          int(total_rows * st.session_state.train_size / 100))
         test_rows = total_rows - train_rows
 
         # Show split metrics

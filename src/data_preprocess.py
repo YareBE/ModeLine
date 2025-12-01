@@ -90,8 +90,9 @@ def apply_na_handling(
                     value = float(constant_value)
                     return df.fillna(value)
                 except (ValueError, TypeError):
-                    raise ValueError(
-                        f"Constant value must be numeric, got: {constant_value}")
+                    st.error(f"Constant value must be numeric, got:"
+                             f"'{constant_value}'")
+                    st.stop()
         # If method not recognized, return original copy unchanged
         return df
     except Exception as e:

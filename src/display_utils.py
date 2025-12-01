@@ -201,7 +201,7 @@ def plot_results():
 
 
 # Aux function for creating the plots
-def make_trace(x, y, name, color, size=5, opacity=0.5, symbol=None):
+def _make_trace(x, y, name, color, size=5, opacity=0.5, symbol=None):
     """Create a Plotly Scattergl trace for 2D scatter plots.
 
     Args:
@@ -240,7 +240,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
     y_train = y_train.values.ravel()
 
     def_fig.add_trace(
-        make_trace(
+        _make_trace(
             y_train, y_train_pred,
             name='Train', size=5, color='#2E86AB', opacity=0.5
         )
@@ -254,7 +254,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
         y_test = y_test.values.ravel()
 
         def_fig.add_trace(
-            make_trace(
+            _make_trace(
                 y_test, y_test_pred,
                 name='Test', size=6, color='#A23B72', opacity=0.6,
                 symbol='x'
@@ -308,14 +308,14 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
     y_train_vals = y_train.iloc[:, 0].to_numpy()
 
     fig = go.Figure()
-    fig.add_trace(make_trace(
+    fig.add_trace(_make_trace(
         x_train, y_train_vals,
         name='Train', color='#2E86AB'
     ))
 
     # Scatter points for test set (if present)
     if not st.session_state.trainset_only:
-        fig.add_trace(make_trace(
+        fig.add_trace(_make_trace(
             x_train, y_train_vals,
             name='Test', color='#A23B72', size=6, opacity=0.7, symbol='x'
         ))
@@ -361,7 +361,7 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
         plotly.graph_objects.Figure: 3D scatter and surface figure.
     """
 
-    def make_trace(x, y, z, name, color, size=3, opacity=0.7, symbol=None):
+    def _make_trace(x, y, z, name, color, size=3, opacity=0.7, symbol=None):
         return go.Scatter3d(
             x=x, y=y, z=z,
             mode="markers", name=name,
@@ -373,7 +373,7 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
     z_train = y_train.iloc[:, 0].to_numpy()
 
     fig = go.Figure()
-    fig.add_trace(make_trace(
+    fig.add_trace(_make_trace(
         x1_train, x2_train, z_train,
         name='Train', color='#2E86AB'
     ))
@@ -384,7 +384,7 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
         x2_test = X_test.iloc[:, 1].to_numpy()
         z_test = y_test.iloc[:, 0].to_numpy()
 
-        fig.add_trace(make_trace(
+        fig.add_trace(_make_trace(
             x1_test, x2_test, z_test,
             name='Test', size=4, color='#A23B72', opacity=0.8, symbol='x'
         ))
