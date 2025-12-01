@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
 import numpy as np
 from typing import Tuple, Optional, Dict, Any
+from sklearn.utils.validation import check_is_fitted, NotFittedError
 
 
 def modeline_prediction(model: LinearRegression, inputs: list) -> float:
@@ -28,13 +29,18 @@ def modeline_prediction(model: LinearRegression, inputs: list) -> float:
         float: Single predicted value from the model.
 
     Raises:
-        ValueError: If model is None, inputs empty, or shape mismatch.
+        ValueError: If model is None/unfitted, inputs empty, or shape mismatch.
         TypeError: If inputs cannot be converted to numpy array.
         RuntimeError: If prediction fails unexpectedly.
     """
-    # Validate model exists
-    if model is None:
-        raise ValueError("Model cannot be None")
+    # Validate model
+    if model is not None and isinstance(model, LinearRegression):
+        try:
+            check_is_fitted(model)
+        except NotFittedError:
+            raise NotFittedError("Model must be fitted")
+    else:
+        raise ValueError("Model must exist")
 
     # Validate inputs are not empty
     if inputs is None or (isinstance(inputs, (list, tuple))
@@ -122,14 +128,28 @@ def ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame]: Tuple of converted DataFrames (X, y).
+
+    Raises:
+        TypeError: If X or y have not array-like types or are empty
     """
+
     # Convert X to DataFrame if needed
     if not isinstance(X, pd.DataFrame):
-        X = pd.DataFrame(X)
+        try:
+            X = pd.DataFrame(X)
+        except Exception as e:
+            raise TypeError(
+                f"Converting X to DataFrame was not possible: {
+                    str(e)}")
 
     # Convert y to DataFrame if needed
     if not isinstance(y, pd.DataFrame):
-        y = pd.DataFrame(y)
+        try:
+            y = pd.DataFrame(y)
+        except Exception as e:
+            raise TypeError(
+                f"Converting y to DataFrame was not possible: {
+                    str(e)}")
 
     return X, y
 
@@ -165,19 +185,20 @@ def split_dataset(X: pd.DataFrame,
         TypeError: If inputs are not DataFrames.
         RuntimeError: If split operation fails.
     """
-    # Ensure inputs are DataFrames
-    X, y = ensure_dataframe(X, y)
 
     # Validate inputs
     validate_inputs(X, y, train_size)
+
+    # Ensure inputs are DataFrames
+    X, y = ensure_dataframe(X, y)
 
     # Validate split_seed is a valid non-negative integer
     try:
         split_seed = int(split_seed)
         if split_seed < 0:
             raise ValueError("split_seed must be non-negative")
-    except (ValueError, TypeError) as e:
-        raise ValueError(f"Invalid split_seed: {str(e)}")
+    except TypeError as e:
+        raise TypeError(f"Invalid split_seed type: {str(e)}")
 
     # Check dataset size - skip split for tiny datasets
     n_samples = len(X)
@@ -190,14 +211,10 @@ def split_dataset(X: pd.DataFrame,
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, train_size=train_size, random_state=split_seed
         )
-
-        # Validate split produced non-empty subsets
-        if X_train.empty or X_test.empty or y_train.empty or y_test.empty:
-            raise RuntimeError("Split resulted in empty subsets")
-
         return X_train, X_test, y_train, y_test
+
     except Exception as e:
-        raise RuntimeError(f"Error during train/test split: {str(e)}")
+        raise RuntimeError(f"Runtime error during train/test split: {str(e)}")
 
 
 def train_linear_regression(
@@ -223,17 +240,12 @@ def train_linear_regression(
         TypeError: If inputs cannot be converted to DataFrames.
         RuntimeError: If model fitting fails.
     """
-    # Check for None inputs
-    if X_train is None:
-        raise ValueError("X_train cannot be None")
-    if y_train is None:
-        raise ValueError("y_train cannot be None")
+
+    # Validate inputs
+    validate_inputs(X_train, y_train, 0.5)  # ->Dummy train_size
 
     # Ensure inputs are DataFrames
     X_train, y_train = ensure_dataframe(X_train, y_train)
-
-    # Validate inputs (use dummy train_size=0.8 for validation purposes)
-    validate_inputs(X_train, y_train, train_size=0.8)
 
     # Fit LinearRegression model
     try:
@@ -291,7 +303,8 @@ def generate_formula(
         formula_parts = [f"{target_name} = "]
 
         # Add each feature coefficient
-        for i, (name, coef) in enumerate(zip(feature_names, coefs)):
+        for i, (name, coef) in enumerate(
+                zip(feature_names, coefs, strict=True)):
             if i == 0:
                 # First term doesn't need sign prefix
                 formula_parts.append(f"{coef:.4f} * {name}")

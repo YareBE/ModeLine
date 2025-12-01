@@ -1,34 +1,51 @@
-# How to contribute?
+# Contributing to ModeLine
 
-### Here are some rules and instructions to follow so as to contribute efficiently and keep the project as clean as possible 
+First off, thanks for taking the time to contribute! 
 
+The following is a set of guidelines for contributing to ModeLine. These are just guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
-## First steps:
-In order to bring the repository to your local IDE you must clone the url, either with the vscode interface or with the following git bash command:
-"git clone 'https://github.com/YareBE/ModeLine'".
-Use "git fetch" or "git pull" (fetch + merge) to update your local repository with its latest version on github.
+## Quick Start
 
-For anything interface-related, take a look at [Streamlit's official documentation](https://docs.streamlit.io/)
+1.  **Fork and Clone**: Fork the repository to your GitHub account and clone it locally.
+    ```bash
+    git clone [https://github.com/YOUR-USERNAME/ModeLine.git](https://github.com/YOUR-USERNAME/ModeLine.git)
+    cd ModeLine
+    ```
+2.  **Environment Setup**: Install dependencies.
+    ```bash
+    pip install -r requirements.txt
+    pip install autopep8 pytest  # Dev tools
+    ```
 
-## Pull and push:
-If you have the status of collaborator, you can directly modify the main branch by staging (git add 'file') the changes, commiting (git commit -m 'Message') and pushing the changes to github from the branch you want (for instance, git push origin 'branch')
+## Workflow & Branches
 
-On the other hand, if you are just a visitor of the project, and want to change, fix something or add new features, you must follow the steps described above. Once you try to push, a "fork creation" option will be suggested to you.
+**We do not allow direct commits to `main`.** All changes must come through a Pull Request (PR).
 
-This will create an exact copy of the github repo under your account and, from there, you can open a "pull request". This request will appear in the original main and an authorized person can decide whether to accept, discard or integrate ir partially.
+1.  **Create a Branch**: Create a new branch for your specific task.
+    * Use the convention: `type/short-description`
+    * Examples: `feat/add-login`, `fix/broken-chart`, `docs/update-readme`.
+2.  **Make Changes**: Write your code and tests.
+3.  **Local Testing**: Before pushing, ensure your code is clean and works.
+    ```bash
+    # 1. Format Check
+    autopep8 --diff --exit-code --recursive .
+    # 2. Run Tests
+    pytest
+    ```
+4.  **Commit**: Please follow [Conventional Commits](https://www.conventionalcommits.org/).
+    * `feat: add new sidebar filter`
+    * `fix: resolve crash on startup`
+5.  **Push & PR**: Push your branch and open a Pull Request against `main`.
 
-## Working policies
-Contributors are encouraged to create various branches, each one operating with different aspects (refactoring, updating docs, adding a new feature, experimenting...), thus providing a dynamic environment. The main branch should always be completely functional.
-It is desirable (but not mandatory) to follow the branches naming convention in the next link: https://www.geeksforgeeks.org/git/how-to-naming-conventions-for-git-branches.
+## Continuous Integration (CI)
 
-It is also preferable to write commits after an extended and well-known standard: https://www.conventionalcommits.org/en/v1.0.0
+Our GitHub Actions workflow enforces high standards. Your PR will be **blocked** if:
+* **Linter Fails**: Code is not formatted according to PEP 8 (checked via `autopep8`).
+* **Tests Fail**: Any logic error detected by `pytest`.
+
+> **Tip:** Run the checks locally (step 3 above) to avoid waiting for the CI to fail.
 
 ## Documentation
-When updating any markdown file, it is important to stick to its set of rules and being rigorous with the format and information displayed.
 
-Some examples are the [README](https://github.com/YareBE/ModeLine/blob/main/README.md), which contains a description of the project functioning, installing guide and how to use it correctly; and the current file, CONTRIBUTING, a collection of advices and directions to be a part of the project while keeping it tidy.
-
-
-
-
-
+* If you change logic, update the documentation/comments accordingly.
+* If you add a new dependency, remember to update `requirements.txt`.

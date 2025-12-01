@@ -9,6 +9,7 @@ import io
 import joblib
 from typing import List, Dict
 from sklearn.linear_model import LinearRegression
+from sklearn.utils.validation import check_is_fitted, NotFittedError
 
 
 def packet_creation(
@@ -43,13 +44,18 @@ def packet_creation(
             Buffer is positioned at start (seek(0)) ready for reading/download.
 
     Raises:
-        ValueError: If model is None, features/target empty, or invalid content.
+        ValueError: If model is None/unfitted, features/target empty, or invalid content.
         TypeError: If parameters have incorrect types.
         RuntimeError: If serialization to joblib format fails.
     """
     # Validate model
-    if model is None:
-        raise ValueError("Model cannot be None")
+    if model is not None and isinstance(model, LinearRegression):
+        try:
+            check_is_fitted(model)
+        except NotFittedError:
+            raise ValueError("Model must be fitted")
+    else:
+        raise ValueError("Model must exist")
 
     # Validate description - convert None to empty string
     if description is None:
@@ -57,7 +63,7 @@ def packet_creation(
     elif not isinstance(description, str):
         raise TypeError(
             f"description must be str, got "
-                f"{type(description).__name__}")
+            f"{type(description).__name__}")
 
     # Validate features - must be non-empty list/tuple of strings
     if features is None or (
@@ -82,7 +88,7 @@ def packet_creation(
     if len(target) != 1:
         raise ValueError(
             f"target must contain exactly 1 element, got "
-                f"{len(target)}")
+            f"{len(target)}")
     if not isinstance(target[0], str):
         raise TypeError("target element must be string")
 
