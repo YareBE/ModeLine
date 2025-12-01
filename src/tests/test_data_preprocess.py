@@ -2,8 +2,6 @@ import pytest
 import pandas as pd
 import numpy as np
 from io import BytesIO
-from unittest.mock import Mock, patch
-import joblib
 from data_preprocess import get_numeric_columns, get_na_info, apply_na_handling
 
 @pytest.fixture

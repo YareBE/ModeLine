@@ -73,6 +73,14 @@ def apply_na_handling(
         RuntimeError: If an unexpected error occurs during processing.
     """
     df = df.copy()
+    if method == "Constant":
+        if constant_value is not None:
+            try:
+                # Convert constant to float and fill all NAs
+                value = float(constant_value)
+                return df.fillna(value)
+            except (ValueError, TypeError):
+                raise ValueError("Constant value must be numeric")
     try:
         if method == "Delete rows":
             # Delete all rows that contain at least one NA value
@@ -83,16 +91,6 @@ def apply_na_handling(
         elif method == "Median":
             # Fill NAs in numeric columns with median value
             return df.fillna(df.median(numeric_only=True))
-        elif method == "Constant":
-            if constant_value is not None:
-                try:
-                    # Convert constant to float and fill all NAs
-                    value = float(constant_value)
-                    return df.fillna(value)
-                except (ValueError, TypeError):
-                    st.error(f"Constant value must be numeric, got:"
-                             f"'{constant_value}'")
-                    st.stop()
         # If method not recognized, return original copy unchanged
         return df
     except Exception as e:

@@ -357,7 +357,7 @@ class Interface:
             help="Select training features",
             # Reset processing downstream when features are changed
             on_change=lambda: self.reset_downstream_selections(2),
-            key="features"
+            key="features"-
         )
 
     def _target_selection(self, available_columns):
@@ -439,9 +439,13 @@ class Interface:
                     st.error("Enter a constant value")
                 else:
                     # Apply the imputation method
-                    processed = apply_na_handling(
-                        selected_data, na_method, constant_value
-                    )
+                    try:
+                        processed = apply_na_handling(
+                            selected_data, na_method, constant_value
+                        )
+                    except Exception as e:
+                        st.error(f"error: {str(e)}")
+                        return
                     # Just save if there are still data after processing
                     if not processed.empty:
                         st.session_state.processed_data = processed

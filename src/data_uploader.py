@@ -38,6 +38,9 @@ def dataset_error_handler(file: BinaryIO, extension: str) -> pd.DataFrame:
     """
     # Reset file pointer to ensure full file is read
     file.seek(0)
+    if extension not in ['csv', 'xls', 'xlsx', 'db', 'sqlite']:
+        raise ValueError(f"Unsupported file extension: {extension}")
+
     try:
         # Route to appropriate loader based on extension
         if extension == 'csv':
@@ -47,9 +50,6 @@ def dataset_error_handler(file: BinaryIO, extension: str) -> pd.DataFrame:
         elif extension in ('db', 'sqlite'):
             # SQLite requires in-memory connection for querying
             data = _upload_sql(file)
-        else:
-            raise ValueError(f"Unsupported file extension: {extension}")
-
     except Exception as err:
         raise Exception(err)
 

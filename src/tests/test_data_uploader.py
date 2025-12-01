@@ -2,8 +2,6 @@ import pytest
 import pandas as pd
 import numpy as np
 from io import BytesIO
-from unittest.mock import Mock, patch
-import joblib
 from data_uploader import _upload_csv, _upload_excel, dataset_error_handler
 
 @pytest.fixture
@@ -102,10 +100,9 @@ class TestErrorHandler:
         result = dataset_error_handler(excel_file, 'xlsx')
         assert isinstance(result, pd.DataFrame)
         assert not result.empty
-
+    
     def test_unsupported_extension(self):
-        """Debe manejar extensión no soportada."""
+        """Debe lanzar ValueError con extensión no soportada."""
         buffer = BytesIO(b"test")
-        result = dataset_error_handler(buffer, 'txt')
-        assert isinstance(result, pd.DataFrame)
-        assert result.empty
+        with pytest.raises(ValueError, match="Unsupported file extension: txt"):
+            dataset_error_handler(buffer, 'txt')
