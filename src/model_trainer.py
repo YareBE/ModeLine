@@ -1,278 +1,335 @@
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
+import streamlit as st
 import numpy as np
-import plotly.graph_objects as go
 
+
+def predict():
+    """Render a prediction UI and compute a single prediction.
+
+    The function builds a small form that allows the user to input numeric
+    values for each feature required by the trained or loaded model. The
+    feature and target names are retrieved from **st.session_state** or the
+    loaded packet. When the user clicks the predict button the model's
+    **predict** method is called and the result is displayed.
+
+    Side effects:
+        - Reads **st.session_state** keys such as **features**, **target**,
+          **model** and **loaded_packet**.
+        - Renders Streamlit inputs and outputs (metrics, messages).
+
+    Returns:
+        None
+
+    Raises:
+        None: Errors during prediction are caught and displayed to the user
+        via **st.error** rather than being raised.
+    """
+
+    st.subheader("Predict with ModeLine")
+    st.markdown("##### Enter the input values for your prediction")
+
+    features = (
+        st.session_state.features
+        or st.session_state.loaded_packet.get("features")
+    )
+    target = (
+        st.session_state.target
+        or st.session_state.loaded_packet.get("target")
+    )
+
+    if not features or not target:
+        st.error("Features or target not found in session state")
+        return
+
+    model = st.session_state.get("model") or st.session_state.loaded_packet.get("model")
+    if model is None:
+        st.error("No model found. Train or load a model first")
+        return
+
+    inputs = np.array(
+        [
+            st.number_input(name, value=1.0, step=0.1, width=200)
+            for name in features
+        ]
+    ).reshape(1, -1)
+
+    if st.button("PREDICT", type="primary"):
+        try:
+            prediction = model.predict(inputs)
+
+            st.markdown("#### Predicted Value:")
+
+            # Display results
+            st.metric(
+                label=f"Predicted {target}",
+                value=f"{prediction[0][0]:,.3f}"
+            )
+
+            st.success("✅ Prediction completed successfully!")
+        except Exception as e:
+            st.error(f"Error making prediction: {str(e)}")
 
 class LRTrainer:
-    
-    def __init__(self, X, y, train_size):
-        """
-        Initialize the Linear Regression Trainer
-        
+    """Linear Regression trainer with validation, splitting and evaluation.
+
+    This class wraps common steps required to fit and evaluate a scikit-learn
+    **LinearRegression** model: input validation, coercion to DataFrame,
+    optional train/test splitting (disabled for very small datasets) and
+    calculation of common metrics (R² and MSE).
+    """
+
+    def __init__(self, X, y, train_size, split_seed):
+        """Initialize the trainer and prepare train/test subsets.
+
         Args:
-            X: Features (DataFrame or array-like)
-            y: Target variable (DataFrame or array-like)
-            train_size: Size of training set (float for proportion, int for absolute number)
+            X (pandas.DataFrame or array-like): Feature matrix.
+            y (pandas.DataFrame or array-like): Target vector or DataFrame.
+            train_size (float): Fraction of data to use for training (0..1).
+            split_seed (int): Random seed used for reproducible splitting.
+
+        Raises:
+            ValueError: If the inputs are invalid (mismatched lengths, empty,
+                or train_size out of range).
         """
+        # Initialize model and prediction attributes
         self.model = None
         self.y_train_pred = None
         self.y_test_pred = None
-        self._test_available = True if len(X) >= 10 else False
+        # Determine if dataset is large enough for train/test split
+        # Minimum 10 rows required
+        self._test_available = len(X) >= 10
         
-        # Validaciones
+        # Validate inputs before processing
+        self._validate_inputs(X, y, train_size)
+        # Ensure data is in DataFrame format for consistent handling
+        X, y = self._ensure_dataframe(X, y)
+        # Split data into train/test sets
+        self._split_dataset(X, y, train_size, split_seed)
+
+    @staticmethod
+    def _validate_inputs(X, y, train_size):
+        """Validate constructor inputs for basic consistency.
+
+        Ensures that X and y are not None, have matching lengths, are not
+        empty, and that **train_size** is within the [0, 1] range.
+
+        Args:
+            X: Feature matrix or equivalent.
+            y: Target vector or equivalent.
+            train_size (float): Train set fraction.
+
+        Raises:
+            ValueError: On any validation failure.
+        """
+        # Check for None inputs
         if X is None or y is None:
             raise ValueError("X and y cannot be None")
-        
+
+        # Validate matching dimensions
         if len(X) != len(y):
-            raise ValueError(f"X and y must have same length. Got X: {len(X)}, y: {len(y)}")
+            raise ValueError(
+                f"X and y must have same length. Got X: {len(X)}, y: {len(y)}"
+            )
         
+        # Check for empty datasets
         if len(X) == 0:
             raise ValueError("X and y cannot be empty")
-        
-        assert (0 <= train_size <= 1), "The training size must be between 0 and 1"
-        
-        # Convertir a DataFrame si es necesario
+
+        # Validate train size is a valid proportion
+        if not (0 <= train_size <= 1):
+            raise ValueError("train_size must be between 0 and 1")
+
+    @staticmethod
+    def _ensure_dataframe(X, y):
+        """Convert array-like inputs to pandas DataFrames.
+
+        Args:
+            X: Feature matrix (DataFrame or array-like).
+            y: Target values (DataFrame or array-like).
+
+        Returns:
+            tuple: **(X_df, y_df)** where both are pandas DataFrames.
+        """
+        # Convert X to DataFrame if it's array-like
         if not isinstance(X, pd.DataFrame):
             X = pd.DataFrame(X)
+
+        # Convert y to DataFrame if it's array-like
         if not isinstance(y, pd.DataFrame):
             y = pd.DataFrame(y)
-        self._split_dataset(X, y, train_size)
-    
-    def _split_dataset(self, X, y, train_size: int):
-        """Split dataset into train and test sets"""
+
+        return X, y
+
+    def _split_dataset(self, X, y, train_size, split_seed):
+        """Split the dataset into training and test subsets.
+
+        If the dataset is too small (fewer than 10 rows) the trainer will
+        disable the test split and return the full dataset as the training
+        set. Otherwise the function uses scikit-learn **train_test_split**
+        with the provided **train_size** and **random_state**.
+
+        Args:
+            X (pandas.DataFrame): Feature DataFrame.
+            y (pandas.DataFrame): Target DataFrame.
+            train_size (float): Fraction of data for training (0..1).
+            split_seed (int): Random seed for reproducibility.
+
+        Returns:
+            None: Subsets are stored on the instance as attributes
+            **X_train**, **X_test**, **y_train** and **y_test**.
+        """
         if self._test_available:
-            self.X_train, self.X_test, self.y_train, \
-            self.y_test = train_test_split(X, y, train_size=train_size,
-                                            random_state=18)
+            # Standard train/test split for adequate dataset size
+            (self.X_train, self.X_test, self.y_train,
+             self.y_test) = train_test_split(
+                X, y, train_size=train_size, random_state=split_seed
+            )
         else:
-            self.X_train, self.X_test, self.y_train, self.y_test =\
+            # Use all data for training, no test set
+            self.X_train, self.X_test, self.y_train, self.y_test = (
                 X, None, y, None
-        
-        
+            )
+
     def train_model(self):
-        """Train the linear regression model"""
+        """Fit a scikit-learn LinearRegression model on the training data.
+
+        Returns:
+            sklearn.linear_model.LinearRegression: The fitted model instance.
+
+        Raises:
+            ValueError: If training data are not initialized.
+            RuntimeError: If the underlying scikit-learn fit fails.
+        """
+        # Validate training data exists 
         if self.X_train is None or self.y_train is None:
-            raise ValueError("Training data not initialized. Check __init__ method")
-        
+            raise ValueError(
+                "Training data not initialized. Check __init__ method"
+            )
+
         try:
+            # Initialize sklearn's LinearRegression model
             self.model = LinearRegression()
+
+            # Fit model using training data (computes coefficients)
             self.model.fit(self.X_train, self.y_train)
+
             return self.model
         except Exception as e:
+            # Catch fitting errors 
             raise RuntimeError(f"Error training model: {str(e)}")
-    
+
     def get_splitted_subsets(self):
-        """Get the train/test subsets"""
+        """Return the train/test subsets produced during initialization.
+
+        Returns:
+            tuple: **(X_train, X_test, y_train, y_test)**. For small datasets
+            where no test split was created, **X_test** and **y_test** will
+            be **None**.
+        """
         return self.X_train, self.X_test, self.y_train, self.y_test
-    
+
     def get_formula(self):
-        """Get the regression formula with feature names"""
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train_model() first")
-        
-        try:
-            # Obtener nombres de variables
-            feature_names = self.X_train.columns.tolist()
-            target_name = self.y_train.columns[0]
-            
-            # Construir fórmula
-            coefs = self.model.coef_.ravel()
-            intercept = self.model.intercept_[0]
-            
-            formula_parts = [f"{target_name} = "]
-            
-            for i, (name, coef) in enumerate(zip(feature_names, coefs)):
-                if i == 0:
-                    formula_parts.append(f"{coef:.4f} * {name}")
-                else:
-                    sign = "+" if coef >= 0 else "-"
-                    formula_parts.append(f" {sign} {abs(coef):.4f} * {name}")
-            
-            # Añadir intercept
-            sign = "+" if intercept >= 0 else "-"
-            formula_parts.append(f" {sign} {abs(intercept):.4f}")
-            
-            return "".join(formula_parts)
-        except Exception as e:
-            raise RuntimeError(f"Error generating formula: {str(e)}")
-    
-    def test_model(self):
-        """Evaluate model performance"""
+        """Return a human-readable regression formula string.
+
+        The formula is constructed using feature names from **X_train** and
+        the model coefficients and intercept. The resulting string is suitable
+        for display in the UI.
+
+        Returns:
+            str: A formatted equation like **target = 0.1234 * x1 + ...**.
+
+        Raises:
+            ValueError: If the model has not been trained yet.
+            RuntimeError: If coefficient extraction or formatting fails.
+        """
+        # Ensure model is trained before accessing coefficients
         if self.model is None:
             raise ValueError("Model not trained yet. Call train_model() first")
 
         try:
-            y_test_pred = None
+            # Extract feature and target names from DataFrames
+            feature_names = self.X_train.columns.tolist()
+            target_name = self.y_train.columns[0]
+
+            # Get model coefficients and intercept
+            coefs = self.model.coef_.ravel()
+            intercept = self.model.intercept_[0]
+
+            # Build formula string piece by piece
+            formula_parts = [f"{target_name} = "]
+
+            # Add coefficient terms for each feature
+            for i, (name, coef) in enumerate(zip(feature_names, coefs)):
+                if i == 0:
+                    # First term: no leading +/- sign
+                    formula_parts.append(f"{coef:.4f} * {name}")
+                else:
+                    # Subsequent terms: add explicit +/- sign
+                    sign = "+" if coef >= 0 else "-"
+                    formula_parts.append(f" {sign} {abs(coef):.4f} * {name}")
+
+            # Add intercept term with appropriate sign
+            sign = "+" if intercept >= 0 else "-"
+            formula_parts.append(f" {sign} {abs(intercept):.4f}")
+
+            # Join all parts into single string
+            return "".join(formula_parts)
+
+        except Exception as e:
+            raise RuntimeError(f"Error generating formula: {str(e)}")
+
+    def test_model(self):
+        """Compute predictions and evaluate model performance.
+
+        The method predicts on the training set and computes R² and MSE. If a
+        test set is available (dataset large enough) it also predicts on the
+        test set and computes the same metrics. The method returns a metrics
+        dictionary together with the raw prediction arrays.
+
+        Returns:
+            tuple: **(metrics, y_train_pred, y_test_pred)** where **metrics**
+            is a dict with keys **'train'** and optionally **'test'** and
+            each contains **'r2'** and **'mse'** floats.
+
+        Raises:
+            ValueError: If called before training the model.
+            RuntimeError: On prediction or metric computation errors.
+        """
+        # Ensure model is trained before making predictions
+        if self.model is None:
+            raise ValueError("Model not trained yet. Call train_model() first")
+
+        try:
+            # Generate predictions for training set
             y_train_pred = self.model.predict(self.X_train)
+
+            # Calculate training metrics
             metrics = {
                 'train': {
                     'r2': r2_score(self.y_train, y_train_pred),
-                    'mse': mean_squared_error(self.y_train, y_train_pred),
-                    'rmse': np.sqrt(mean_squared_error(self.y_train, y_train_pred)),
-                    'mae': mean_absolute_error(self.y_train, y_train_pred)
-                }     
+                    'mse': mean_squared_error(self.y_train, y_train_pred)
+                }
             }
-            self.y_train_pred = y_train_pred.ravel()
 
+            # Initialize test predictions as None (for small datasets)
+            y_test_pred = None
+
+            # Calculate test metrics if test set exists
             if self._test_available:
                 y_test_pred = self.model.predict(self.X_test)
                 metrics['test'] = {
-                        'r2': r2_score(self.y_test, y_test_pred),
-                        'mse': mean_squared_error(self.y_test, y_test_pred),
-                        'rmse': np.sqrt(mean_squared_error(self.y_test, y_test_pred)),
-                        'mae': mean_absolute_error(self.y_test, y_test_pred)
-                    }
-                self.y_test_pred = y_test_pred.ravel()
+                    'r2': r2_score(self.y_test, y_test_pred),
+                    'mse': mean_squared_error(self.y_test, y_test_pred)
+                }
 
             return metrics, y_train_pred, y_test_pred
-  
-            
+
         except Exception as e:
+            # Catch prediction or metric calculation errors
             raise RuntimeError(f"Error testing model: {str(e)}")
+    
 
-    def plot_results(self):
-        """Create an interactive visualization of predictions vs actual values"""
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train_model() first")
-        
-        if self.y_train_pred is None:
-            raise ValueError("Model not tested yet. Call test_model() first")
-        
-        try:
-            n_features = self.X_train.shape[1]
-            fig = go.Figure()
-            
-            # CASO 1: Una variable - Gráfico 2D con línea de regresión
-            if n_features == 1:
-                # Puntos de train y test
-                fig.add_trace(go.Scatter(
-                    x=self.X_train.iloc[:, 0], y=self.y_train.iloc[:, 0],
-                    mode='markers', name='Train',
-                    marker=dict(size=5, color='#2E86AB', opacity=0.6)
-                ))
-
-                if self._test_available:
-                    fig.add_trace(go.Scatter(
-                                x=self.X_test.iloc[:, 0], y=self.y_test.iloc[:, 0],
-                                mode='markers', name='Test',
-                                marker=dict(size=6, color='#A23B72',\
-                                    opacity=0.7, symbol='x')
-                            ))
-                
-                # Línea de regresión
-                X_min, X_max = self.X_train.iloc[:, 0].min(), self.X_train.iloc[:, 0].max()
-                X_range = np.linspace(X_min, X_max, 100).reshape(-1, 1)
-                y_pred = self.model.predict(X_range)
-                fig.add_trace(go.Scatter(
-                    x=X_range.ravel(), y=y_pred.ravel(),
-                    mode='lines', name='Regression',
-                    line=dict(color='#F18F01', width=3)
-                ))
-                
-                fig.update_layout(
-                    title='Linear Regression: Feature vs Target',
-                    xaxis_title=self.X_train.columns[0],
-                    yaxis_title=self.y_train.columns[0],
-                    template='plotly_white', height=600
-                )
-            
-            # CASO 2: Dos variables - Gráfico 3D con plano
-            elif n_features == 2:
-                # Puntos de train
-                fig.add_trace(go.Scatter3d(
-                    x=self.X_train.iloc[:, 0], 
-                    y=self.X_train.iloc[:, 1], 
-                    z=self.y_train.iloc[:, 0],
-                    mode='markers', name='Train',
-                    marker=dict(size=3, color='#2E86AB', opacity=0.7)
-                ))
-                if self._test_available:
-                    fig.add_trace(go.Scatter3d(
-                            x=self.X_test.iloc[:, 0], 
-                            y=self.X_test.iloc[:, 1], 
-                            z=self.y_test.iloc[:, 0],
-                            mode='markers', name='Test',
-                            marker=dict(size=4, color='#A23B72',\
-                                        opacity=0.8, symbol='x')
-                        ))
-
-                # Plano de regresión
-                x1_min, x1_max = self.X_train.iloc[:, 0].min(), self.X_train.iloc[:, 0].max()
-                x2_min, x2_max = self.X_train.iloc[:, 1].min(), self.X_train.iloc[:, 1].max()
-                
-                x1_range = np.linspace(x1_min, x1_max, 15)
-                x2_range = np.linspace(x2_min, x2_max, 15)
-                x1_grid, x2_grid = np.meshgrid(x1_range, x2_range)
-                X_grid = np.c_[x1_grid.ravel(), x2_grid.ravel()]
-                z_grid = self.model.predict(X_grid).reshape(x1_grid.shape)
-                
-                fig.add_trace(go.Surface(
-                    x=x1_range, y=x2_range, z=z_grid,
-                    name='Regression Plane',
-                    colorscale='YlOrRd', opacity=0.6,
-                    showscale=False
-                ))
-                
-                fig.update_layout(
-                    title='3D Linear Regression',
-                    scene=dict(
-                        xaxis_title=self.X_train.columns[0],
-                        yaxis_title=self.X_train.columns[1],
-                        zaxis_title=self.y_train.columns[0]
-                    ),
-                    template='plotly_white', height=700
-                )
-            
-            # CASO 3: Más variables - Actual vs Predicted
-            else:
-                # Convertir a arrays 1D
-                y_train_actual = self.y_train.values.ravel()
-                    
-                # Puntos train
-                fig.add_trace(go.Scatter(
-                    x=y_train_actual, y=self.y_train_pred,
-                    mode='markers', name='Train',
-                    marker=dict(size=5, color='#2E86AB', opacity=0.5)
-                ))
-
-                if self._test_available:
-                    y_test_actual = self.y_test.values.ravel()
-                    fig.add_trace(go.Scatter(
-                            x=y_test_actual, y=self.y_test_pred,
-                            mode='markers', name='Test',
-                            marker=dict(size=6, color='#A23B72',\
-                                        opacity=0.6, symbol='x')
-                        ))
-                    all_values = np.concatenate([y_train_actual, y_test_actual,
-                                                self.y_train_pred, self.y_test_pred])
-                else:
-                    all_values = np.concatenate([y_train_actual, self.y_train_pred])
-                
-                # Línea perfecta (y = x)
-                min_val, max_val = all_values.min(), all_values.max()
-                
-                # Añadir margen
-                margin = (max_val - min_val) * 0.05
-                min_val -= margin
-                max_val += margin
-                
-                fig.add_trace(go.Scatter(
-                    x=[min_val, max_val], y=[min_val, max_val],
-                    mode='lines', name='Perfect',
-                    line=dict(color='black', width=2, dash='dash')
-                ))
-                
-                fig.update_layout(
-                    title='Actual vs Predicted Values',
-                    xaxis_title='Actual', yaxis_title='Predicted',
-                    template='plotly_white', height=700,
-                    yaxis=dict(scaleanchor="x", scaleratio=1)
-                )
-
-            return fig
-            
-        except Exception as e:
-            raise RuntimeError(f"Error plotting results: {str(e)}")
+ 
