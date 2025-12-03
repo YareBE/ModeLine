@@ -5,16 +5,19 @@ on:
     branches: [ "main" ]
     paths:
       - 'src/**'
+      - 'tests/**' 
   pull_request:
     branches: [ "main" ]
     paths:
       - 'src/**'
+      - 'tests/**'
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -23,7 +26,7 @@ jobs:
       - name: Install linter
         run: pip install autopep8
 
-      - name: Check code style
+      - name: Check code style in src
         run: autopep8 --diff --exit-code --recursive src
 
   tests:
@@ -42,6 +45,7 @@ jobs:
         run: |
           pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest  # Asegura que pytest esté instalado
       
       - name: Run tests
-        run: pytest src
+        run: pytest tests -v
