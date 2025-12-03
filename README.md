@@ -71,7 +71,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Run the application
-streamlit run src/modeline.py
+streamlit run src/frontend/modeline.py
 ```
 
 ---
