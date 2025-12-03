@@ -44,6 +44,7 @@ def get_na_info(df: pd.DataFrame) -> List[str]:
     cols_with_na = df.columns[df.isna().any()].tolist()
     return cols_with_na
 
+
 def display_dataframe() -> None:
     """Render a preview of the active DataFrame with a selectable row window.
 

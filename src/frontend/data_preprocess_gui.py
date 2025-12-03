@@ -1,76 +1,78 @@
-#First of all, we need to access the backend directory from the root
+# First of all, we need to access the backend directory from the root
+from display_utils import display_dataset_info
+from backend.data_preprocess import (
+    apply_na_handling
+)
+import streamlit as st
 import sys
 import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
 
-import streamlit as st
-from backend.data_preprocess import (
-    apply_na_handling
-)
-from display_utils import display_dataset_info
 
 def reset_downstream_selections(level):
-        """Reset downstream session state variables when upstream choices change.
+    """Reset downstream session state variables when upstream choices change.
 
-        This function resets Streamlit ``st.session_state`` keys that depend on
-        earlier steps of the workflow. The granularity of the reset is
-        controlled by the ``level`` parameter: lower levels perform broader
-        resets.
+    This function resets Streamlit ``st.session_state`` keys that depend on
+    earlier steps of the workflow. The granularity of the reset is
+    controlled by the ``level`` parameter: lower levels perform broader
+    resets.
 
-        Args:
-            level (int): Reset granularity. Typical values:
-                - 1: Reset dataset, features and target selections.
-                - 2: Additionally reset processed data and NA method.
-                - 3: Additionally reset description and model.
-        """
-        if level <= 1:
-            # Completely reset the session_state when the dataset changes
-            keys_to_reset = ["features", "target", "df"]
-            for key in keys_to_reset:
-                if key in ("features", "target"):
-                    # Empty list for multiple selections
-                    st.session_state[key] = []
-        if level <= 2:
-            keys_to_reset = ["processed_data", "na_method"]
-            for key in keys_to_reset:
-                st.session_state[key] = None
-        if level <= 3:
-            keys_to_reset = ["description", "model"]
-            for key in keys_to_reset:
-                st.session_state[key] = None
+    Args:
+        level (int): Reset granularity. Typical values:
+            - 1: Reset dataset, features and target selections.
+            - 2: Additionally reset processed data and NA method.
+            - 3: Additionally reset description and model.
+    """
+    if level <= 1:
+        # Completely reset the session_state when the dataset changes
+        keys_to_reset = ["features", "target", "df"]
+        for key in keys_to_reset:
+            if key in ("features", "target"):
+                # Empty list for multiple selections
+                st.session_state[key] = []
+    if level <= 2:
+        keys_to_reset = ["processed_data", "na_method"]
+        for key in keys_to_reset:
+            st.session_state[key] = None
+    if level <= 3:
+        keys_to_reset = ["description", "model"]
+        for key in keys_to_reset:
+            st.session_state[key] = None
+
 
 def parameters_selection(df):
-        """Render UI controls in Streamlit to select features and target.
+    """Render UI controls in Streamlit to select features and target.
 
-        This function relies on Streamlit session state to store the selected
-        **features** and **target**. It shows dataset info, then two subsections to
-        pick training features and the target variable (numeric-only).
+    This function relies on Streamlit session state to store the selected
+    **features** and **target**. It shows dataset info, then two subsections to
+    pick training features and the target variable (numeric-only).
 
-        Args:
-            df (pandas.DataFrame): Loaded dataset used to determine available
-                numeric columns and display dataset metrics.
-        """
-        available_columns = display_dataset_info(df)
+    Args:
+        df (pandas.DataFrame): Loaded dataset used to determine available
+            numeric columns and display dataset metrics.
+    """
+    available_columns = display_dataset_info(df)
 
-        if len(available_columns) <= 0:
-            st.error("⚠️ The uploaded dataset doesn't contain numeric " \
-                        "columns. Please load another file.")
-            st.stop()
-        
-        # Section to select the features
-        st.subheader("2️⃣ Features")
-        _features_selection(available_columns)
-        st.divider()
+    if len(available_columns) <= 0:
+        st.error("⚠️ The uploaded dataset doesn't contain numeric "
+                 "columns. Please load another file.")
+        st.stop()
 
-        # Section to select the target
-        st.subheader("3️⃣ Target")
-        _target_selection(available_columns)
+    # Section to select the features
+    st.subheader("2️⃣ Features")
+    _features_selection(available_columns)
+    st.divider()
 
-        # Validation: both selections must be complete
-        if not st.session_state.features or not st.session_state.target:
-            st.info("Select features and target")
-            return
+    # Section to select the target
+    st.subheader("3️⃣ Target")
+    _target_selection(available_columns)
+
+    # Validation: both selections must be complete
+    if not st.session_state.features or not st.session_state.target:
+        st.info("Select features and target")
+        return
+
 
 def _features_selection(available_columns):
     """Render the feature selection control in the sidebar.
@@ -85,12 +87,13 @@ def _features_selection(available_columns):
         "Training Features (Numeric)",
         # Exclude the actual target from the options
         options=[col for col in available_columns
-                    if col != st.session_state.target],
+                 if col != st.session_state.target],
         help="Select training features",
         # Reset processing downstream when features are changed
         on_change=lambda: reset_downstream_selections(2),
         key="features"
     )
+
 
 def _target_selection(available_columns):
     """Render the target variable selection control in the sidebar.
@@ -102,7 +105,7 @@ def _target_selection(available_columns):
     """
     # Exclude the selected features
     target_options = [col for col in available_columns
-                        if col not in st.session_state.features]
+                      if col not in st.session_state.features]
 
     # Validation: There must be at least one column for target
     if not target_options:
@@ -119,6 +122,7 @@ def _target_selection(available_columns):
         on_change=lambda: reset_downstream_selections(2),
         key="target"
     )
+
 
 def na_handling_selection():
     """Provide UI to inspect and handle missing values for selected subset.
@@ -145,13 +149,14 @@ def na_handling_selection():
         rows_with_na = selected_data.isna().any(axis=1).sum()
         total_rows = len(selected_data)
 
-        options=["Select method...", "Mean", "Median", "Constant"]
+        options = ["Select method...", "Mean", "Median", "Constant"]
         if rows_with_na < total_rows:
             # Some rows are complete, "Delete rows" is safe
             options.insert(1, "Delete rows")
         else:
             # All rows have NA, can't use "Delete rows"
-            st.warning("All rows contain NA values. 'Delete rows' option is disabled.")
+            st.warning(
+                "All rows contain NA values. 'Delete rows' option is disabled.")
         na_method = st.selectbox("Filling method", options=options)
 
         st.session_state.na_method = na_method
@@ -190,6 +195,7 @@ def na_handling_selection():
         if st.session_state.processed_data is None:
             st.session_state.processed_data = selected_data
         return
+
 
 def set_split():
     """Render controls for train/test split and display split metrics.
@@ -237,8 +243,8 @@ def set_split():
 
     # Calculate the number of rows for each set
     total_rows = len(df)
-    train_rows = max(1, \
-                        int(total_rows * st.session_state.train_size / 100))
+    train_rows = max(1,
+                     int(total_rows * st.session_state.train_size / 100))
     test_rows = total_rows - train_rows
 
     # Show split metrics
