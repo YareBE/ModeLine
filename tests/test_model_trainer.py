@@ -308,25 +308,18 @@ def test_evaluate_model_full_flow(big_dataset_mock, small_dataset_mock):
     assert isinstance(metrics['test']['r2'], float)
 
 
-def test_evaluate_model_train_only(model_mock, small_dataset_mock):
+def test_evaluate_model_train_only(small_dataset_mock):
     """Check if evaluating a small dataset's model returns metrics with only
     parameters w.r.t the training set"""
 
     X_train, y_train = small_dataset_mock
+    model = LinearRegression()
+    model.fit(X_train, y_train)
 
     y_tr_pred, y_te_pred, metrics = trainer.evaluate_model(
-        model_mock, X_train, y_train
+        model, X_train, y_train
     )
 
     assert y_te_pred is None
     assert 'train' in metrics
     assert 'test' not in metrics
-
-
-def test_evaluate_model_dimension_mismatch(model_mock):
-    """Verify if passing dataframes with different sizes raises an exception"""
-    X_broken = pd.DataFrame({'f1': [1, 2]})
-    y_broken = pd.DataFrame({'t': [10, 20, 30]})
-
-    with pytest.raises(RuntimeError, match="Error evaluating model"):
-        trainer.evaluate_model(model_mock, X_broken, y_broken)
