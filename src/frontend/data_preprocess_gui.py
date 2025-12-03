@@ -1,4 +1,13 @@
+# First of all, we need to access the backend directory from the root
+from display_utils import display_dataset_info
+from backend.data_preprocess import (
+    apply_na_handling
+)
 import streamlit as st
+import sys
+import os
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(root_path)
 
 
 def reset_downstream_selections(level):
@@ -32,123 +41,6 @@ def reset_downstream_selections(level):
             st.session_state[key] = None
 
 
-@st.cache_data(show_spinner=False)
-def get_numeric_columns(df):
-    """Return the list of numeric column names from a DataFrame.
-
-    Args:
-        df (pandas.DataFrame): Input DataFrame to inspect.
-
-    Returns:
-        list: Column names of numeric dtype.
-    """
-    return df.select_dtypes(include=['number']).columns.tolist()
-
-
-def get_na_info(df):
-    """Return a list of columns that contain missing values.
-
-    Args:
-        df (pandas.DataFrame): Input DataFrame to inspect.
-
-    Returns:
-        list: Column names that have at least one NA value.
-    """
-    cols_with_na = df.columns[df.isna().any()].tolist()
-    return cols_with_na
-
-
-def apply_na_handling(df, method, constant_value=None):
-    """Apply a missing-value handling strategy to a DataFrame subset.
-
-    The function copies the provided DataFrame and applies one of the
-    available strategies: deleting rows with any NA, filling numeric
-    columns with the mean or median, or filling all NAs with a provided
-    constant numeric value.
-
-    Args:
-        df (pandas.DataFrame): DataFrame to process (a copy is returned).
-        method (str): One of **"Delete rows"**, **"Mean"**, **"Median"**,
-            or **"Constant"**. If the method is not recognized the original
-            DataFrame is returned unchanged.
-        constant_value (Optional[object]): When **method == "Constant"**, the
-            provided value will be converted to **float** and used to fill NAs.
-
-    Returns:
-        pandas.DataFrame: Processed DataFrame after NA handling.
-
-    Raises:
-        ValueError: If **method == "Constant"** but **constant_value** is not
-            numeric-convertible.
-        RuntimeError: If an unexpected error occurs during processing.
-    """
-    df = df.copy()
-    try:
-        if method == "Delete rows":
-            # Delete all the rows that contain at least a NA value
-            return df.dropna()
-        elif method == "Mean":
-            # Fill with the mean, only in numeric columns
-            return df.fillna(df.mean(numeric_only=True))
-        elif method == "Median":
-            # Fill with median, only in numeric columns
-            return df.fillna(df.median(numeric_only=True))
-        elif method == "Constant":
-            if constant_value is not None:
-                try:
-                    # Transform the input value to float
-                    value = float(constant_value)
-                    return df.fillna(value)
-                except (ValueError, TypeError):
-                    raise ValueError(
-                        f"Constant value must be numeric, got: {constant_value}"
-                    )
-        # If a valid method was not selected, return df without changes
-        return df
-    except Exception as e:
-        raise RuntimeError(f"Error applying NA handling: {str(e)}")
-
-
-def _dataset_info(df):
-    """Display basic dataset info in the Streamlit UI and return numeric columns.
-
-    This helper renders basic metrics (rows/columns), warns about missing
-    values and very small datasets, and returns the list of numeric columns
-    available for modeling.
-
-    Args:
-        df (pandas.DataFrame): Dataset to inspect and display.
-
-    Returns:
-        list: Names of numeric columns found in **df**.
-    """
-    available_columns = get_numeric_columns(df)
-    cols_with_na = get_na_info(df)
-
-    # Show basic metrics of the dataset
-    col1, col2 = st.columns(2)
-    col1.metric("Rows", len(df))
-    col2.metric("Cols", len(df.columns))
-    
-    # Show warning of missing values
-    if cols_with_na:
-        # Limit the list of the first 3 columns to avoid saturating the UI
-        na_list = ', '.join(cols_with_na[:3])
-        suffix = ' ...' if len(cols_with_na) > 3 else ''
-        st.caption(f"**Columns with NA values:** {na_list}{suffix}")
-    
-    # Warn if the dataset is too small to do a split train/test
-    if len(df) < 10:
-        msg = ("WARNING: Dataset too small. Training set will contain "
-               "all data, resulting in empty test set.")
-        st.warning(msg)
-        # Flag to use 100% of data in training
-        st.session_state.trainset_only = True
-
-    st.divider()
-    return available_columns
-
-
 def parameters_selection(df):
     """Render UI controls in Streamlit to select features and target.
 
@@ -160,7 +52,12 @@ def parameters_selection(df):
         df (pandas.DataFrame): Loaded dataset used to determine available
             numeric columns and display dataset metrics.
     """
-    available_columns = _dataset_info(df)
+    available_columns = display_dataset_info(df)
+
+    if len(available_columns) <= 0:
+        st.error("⚠️ The uploaded dataset doesn't contain numeric "
+                 "columns. Please load another file.")
+        st.stop()
 
     # Section to select the features
     st.subheader("2️⃣ Features")
@@ -227,7 +124,7 @@ def _target_selection(available_columns):
     )
 
 
-def na_handler():
+def na_handling_selection():
     """Provide UI to inspect and handle missing values for selected subset.
 
     The function extracts the current selection of features and target from
@@ -243,25 +140,33 @@ def na_handler():
     ]
     # Count the total NA values in all the subset
     na_count = selected_data.isna().sum().sum()
-    
+
     # Just show a warning if there are NAs and they have been not processed
     if na_count > 0 and st.session_state.processed_data is None:
         st.warning(f"⚠️ {na_count} missing values")
-        
-        # Selector of imputation method
-        na_method = st.selectbox(
-            "Filling method",
-            options=["Select method...", "Delete rows", "Mean",
-                     "Median", "Constant"]
-        )
+
+        # Calculate how many rows would be deleted
+        rows_with_na = selected_data.isna().any(axis=1).sum()
+        total_rows = len(selected_data)
+
+        options = ["Select method...", "Mean", "Median", "Constant"]
+        if rows_with_na < total_rows:
+            # Some rows are complete, "Delete rows" is safe
+            options.insert(1, "Delete rows")
+        else:
+            # All rows have NA, can't use "Delete rows"
+            st.warning(
+                "All rows contain NA values. 'Delete rows' option is disabled.")
+        na_method = st.selectbox("Filling method", options=options)
+
         st.session_state.na_method = na_method
         constant_value = None
-        
+
         # If the Constant method is selected, ask for the value
         if na_method == "Constant":
             constant_value = st.text_input("Constant value")
-        
-        # Button to apply the selected method 
+
+        # Button to apply the selected method
         if st.button("Apply", type="primary", use_container_width=True):
             # Validation: there must be a selected method
             if na_method == "Select method...":
@@ -271,9 +176,13 @@ def na_handler():
                 st.error("Enter a constant value")
             else:
                 # Apply the imputation method
-                processed = apply_na_handling(
-                    selected_data, na_method, constant_value
-                )
+                try:
+                    processed = apply_na_handling(
+                        selected_data, na_method, constant_value
+                    )
+                except Exception as e:
+                    st.error(f"error: {str(e)}")
+                    return
                 # Just save if there are still data after processing
                 if not processed.empty:
                     st.session_state.processed_data = processed
@@ -298,7 +207,7 @@ def set_split():
     **st.session_state.trainset_only**.
     """
     df = st.session_state.processed_data
-    
+
     # If the dataset is not too small, allow split configuration
     if not st.session_state.trainset_only:
         col1, col2 = st.columns([1, 4])
@@ -306,14 +215,15 @@ def set_split():
         # Column 1: Input the seed for reproducibility
         with col1:
             st.number_input(
-                "Seed",
+                label="Seed",
+                min_value=0,
                 help="Seed for reproducible split",
                 key="seed",
                 value=1,
                 # Reset the model when split changes
                 on_change=lambda: reset_downstream_selections(3)
             )
-        
+
         # Column 2: Slider to select percentage of train
         with col2:
             st.slider(
@@ -333,9 +243,10 @@ def set_split():
 
     # Calculate the number of rows for each set
     total_rows = len(df)
-    train_rows = int(total_rows * st.session_state.train_size / 100)
+    train_rows = max(1,
+                     int(total_rows * st.session_state.train_size / 100))
     test_rows = total_rows - train_rows
-    
+
     # Show split metrics
     col1, col2 = st.columns(2)
     col1.metric("Train rows", f"{train_rows}")
