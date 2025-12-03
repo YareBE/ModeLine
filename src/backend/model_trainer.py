@@ -139,8 +139,8 @@ def ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
             X = pd.DataFrame(X)
         except Exception as e:
             raise TypeError(
-                f"Converting X to DataFrame was not possible: {
-                    str(e)}")
+                f"Converting X to DataFrame was not possible:"
+                f"{str(e)}")
 
     # Convert y to DataFrame if needed
     if not isinstance(y, pd.DataFrame):
@@ -148,8 +148,8 @@ def ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
             y = pd.DataFrame(y)
         except Exception as e:
             raise TypeError(
-                f"Converting y to DataFrame was not possible: {
-                    str(e)}")
+                f"Converting y to DataFrame was not possible:"
+                f"{str(e)}")
 
     return X, y
 
