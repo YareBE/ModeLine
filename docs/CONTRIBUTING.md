@@ -20,9 +20,11 @@ If you have not already done it, set up the repository on your local machine by 
 2.  **Make Changes**: Write your code and tests.
 3.  **Local Testing**: Before pushing, ensure your code is clean and works.
     ```bash
-    # 1. Format Check
+    # 1. Install Development Dependencies
+    pip install -r requirements-dev.txt
+    # 2. Format Check
     autopep8 --diff --exit-code --recursive .
-    # 2. Run Tests
+    # 3. Run Tests
     pytest
     ```
 4.  **Commit**: Please follow [Conventional Commits](https://www.conventionalcommits.org/).
