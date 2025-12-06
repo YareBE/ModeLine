@@ -48,6 +48,13 @@ def packet_creation(
         TypeError: If parameters have incorrect types.
         RuntimeError: If serialization to joblib format fails.
     """
+    # Validate all inputs
+    validate_model(model)
+    validate_description(description)
+    validate_features(features)
+    validate_target(target)
+    validate_formula(formula)
+    validate_metrics(metrics)
 
     # Build packet dictionary with model and metadata
     try:
@@ -91,7 +98,7 @@ def validate_model(model: LinearRegression) -> None:
     else:
         raise ValueError("Model must exist")
 
-def validate_model(description: str) -> None:
+def validate_description(description: str) -> None:
     """Validate the description parameter"""
     if description is None:
         description = ""
