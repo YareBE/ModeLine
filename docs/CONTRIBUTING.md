@@ -23,7 +23,7 @@ If you have not already done it, set up the repository on your local machine by 
     # 1. Install Development Dependencies
     pip install -r requirements-dev.txt
     # 2. Format Check
-    autopep8 --diff --exit-code --recursive .
+    autopep8 --diff --exit-code --recursive ./src
     # 3. Run Tests
     pytest
     ```
