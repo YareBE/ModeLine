@@ -252,7 +252,7 @@ def _make_trace(x, y, name, color, size=5, opacity=0.5, symbol=None):
         x=x, y=y, mode='markers', name=name,
         marker={
             'size': size, 'color': color, 'opacity': opacity, 'symbol': symbol
-            }
+        }
     )
 
 
@@ -308,7 +308,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
             x=[min_val, max_val], y=[min_val, max_val],
             mode='lines',
             name='Perfect',
-            line={'color':'black', 'width':2, 'dash':'dash'}         )
+            line={'color': 'black', 'width': 2, 'dash': 'dash'})
     )
 
     def_fig.update_layout(
@@ -317,7 +317,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
         yaxis_title='Predicted',
         template='plotly_white',
         height=700,
-        yaxis={'scaleanchor':"x", 'scaleratio':1}
+        yaxis={'scaleanchor': "x", 'scaleratio': 1}
     )
 
     return def_fig
@@ -363,7 +363,7 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
         y=y_pred_range.ravel(),
         mode='lines',
         name='Regression',
-        line={'color':'#F18F01', 'width':3}
+        line={'color': '#F18F01', 'width': 3}
     ))
 
     fig.update_layout(
@@ -398,7 +398,8 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
         return go.Scatter3d(
             x=x, y=y, z=z,
             mode="markers", name=name,
-            marker={'size':size, 'color':color, 'opacity':opacity, 'symbol':symbol}
+            marker={'size': size, 'color': color,
+                    'opacity': opacity, 'symbol': symbol}
         )
 
     x1_train = X_train.iloc[:, 0].to_numpy()
@@ -441,9 +442,9 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
     fig.update_layout(
         title="3D Linear Regression",
         scene={
-            'xaxis_title':X_train.columns[0],
-            'yaxis_title':X_train.columns[1],
-            'zaxis_title':y_train.columns[0],
+            'xaxis_title': X_train.columns[0],
+            'yaxis_title': X_train.columns[1],
+            'zaxis_title': y_train.columns[0],
         },
         template='plotly_white',
         height=700
@@ -472,13 +473,15 @@ def display_uploaded_model():
     display_description(packet)
     display_formula(packet)
     display_configuration(packet)
-    display_metrics(packet) 
+    display_metrics(packet)
+
 
 def display_title():
     """Display the model title"""
     col_title, _ = st.columns([3, 1])
     with col_title:
         st.header(f"{st.session_state.model_name}")
+
 
 def display_description(packet):
     """Display the model description (Optional)"""
@@ -488,11 +491,13 @@ def display_description(packet):
     else:
         st.warning("No description provided")
 
+
 def display_formula(packet):
     """Display the model formula"""
     if packet.get("formula"):
         st.subheader("Formula")
         st.code(packet["formula"], language="python")
+
 
 def display_configuration(packet):
     """Display features and target configuration"""
@@ -516,6 +521,7 @@ def display_configuration(packet):
                 st.markdown(f"• *{target}*")
         else:
             st.warning("No target information")
+
 
 def display_metrics(packet):
     """Display performance metrics"""
@@ -545,7 +551,7 @@ def display_metrics(packet):
                 st.warning("No test set metrics")
     else:
         st.warning("No metrics information available")
-    
+
     st.divider()
 
 

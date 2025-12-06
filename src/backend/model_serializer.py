@@ -88,6 +88,7 @@ def packet_creation(
     except Exception as e:
         raise RuntimeError(f"Error serializing packet to joblib: {str(e)}")
 
+
 def validate_model(model: LinearRegression) -> None:
     """Validate the LinearRegression model"""
     if model is not None and isinstance(model, LinearRegression):
@@ -98,6 +99,7 @@ def validate_model(model: LinearRegression) -> None:
     else:
         raise ValueError("Model must exist")
 
+
 def validate_description(description: str) -> None:
     """Validate the description parameter"""
     if description is None:
@@ -107,17 +109,19 @@ def validate_description(description: str) -> None:
             f"description must be str, got "
             f"{type(description).__name__}")
 
+
 def validate_features(features: List[str]) -> None:
     """Validate the features parameter"""
     if features is None or (
-        isinstance(features, (list, tuple))and len(features) == 0
-        ):
+        isinstance(features, (list, tuple)) and len(features) == 0
+    ):
         raise ValueError("features cannot be None or empty")
     if not isinstance(features, (list, tuple)):
         raise TypeError(
             f"features must be list/tuple, got {type(features).__name__}")
     if not all(isinstance(f, str) for f in features):
         raise TypeError("All features must be strings")
+
 
 def validate_target(target: List[str]) -> None:
     """Validate the target parameter"""
@@ -134,6 +138,7 @@ def validate_target(target: List[str]) -> None:
     if not isinstance(target[0], str):
         raise TypeError("target element must be string")
 
+
 def validate_formula(formula: str) -> None:
     """Validate the formula parameter"""
     if formula is None:
@@ -142,6 +147,7 @@ def validate_formula(formula: str) -> None:
         raise TypeError(f"formula must be str, got {type(formula).__name__}")
     if len(formula.strip()) == 0:
         raise ValueError("formula cannot be empty string")
+
 
 def validate_metrics(metrics: Dict[str, Dict[str, float]]) -> None:
     """Validate the metrics parameter"""

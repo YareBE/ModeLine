@@ -58,10 +58,11 @@ def reset_session_state():
             # Reset selection lists to empty
             st.session_state[key] = []
         elif key in ["processed_data", "description", "model", "na_method",
-                        "df", "loaded_packet"]:
+                     "df", "loaded_packet"]:
             # Reset objects to None
             st.session_state[key] = None
     st.session_state["trainset_only"] = False
+
 
 def handle_data_file(uploaded_file, extension):
     """Handle loading of data (CSV, Excel, SQLite)"""
@@ -75,6 +76,7 @@ def handle_data_file(uploaded_file, extension):
             # Store DataFrame in session state
             st.session_state.df = df
             st.success("✅ Dataset correctly loaded.")
+
 
 def handle_model_file(uploaded_file):
     """Handle loading of model file (Joblib)"""

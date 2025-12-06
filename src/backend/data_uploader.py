@@ -51,7 +51,7 @@ def dataset_error_handler(file: BinaryIO, extension: str) -> pd.DataFrame:
             # SQLite requires in-memory connection for querying
             data = _upload_sql(file)
     except Exception as e:  # Fallback for unexpected errors
-        raise RuntimeError(f"An unexpected error occurred while " \
+        raise RuntimeError(f"An unexpected error occurred while "
                            f"processing the file: {str(e)}")
 
     else:

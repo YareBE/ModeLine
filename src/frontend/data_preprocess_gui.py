@@ -181,7 +181,7 @@ def handle_na_present(na_info, selected_data):
     # If the Constant method is selected, ask for the value
     if na_method == "Constant":
         constant_value = st.text_input("Constant value")
-    
+
     # Button to apply the selected method
     if st.button("Apply", type="primary", use_container_width=True):
         validate_and_apply(na_method, constant_value, selected_data)
@@ -201,7 +201,7 @@ def validate_and_apply(na_method, constant_value, selected_data):
     try:
         processed = apply_na_handling(
             selected_data, na_method, constant_value
-            )
+        )
     except Exception as e:
         st.error(f"error: {str(e)}")
         return None
