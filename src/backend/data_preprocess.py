@@ -40,8 +40,7 @@ def apply_na_handling(
         RuntimeError: If an unexpected error occurs during processing.
     """
     df = df.copy()
-    if method == "Constant":
-        if constant_value is not None:
+    if method == "Constant" and constant_value is not None:
             try:
                 # Convert constant to float and fill all NAs
                 value = float(constant_value)
