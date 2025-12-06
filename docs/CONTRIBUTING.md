@@ -8,7 +8,7 @@ The following is a set of guidelines for contributing to ModeLine. These are jus
 
 1.  **Fork and Clone**: Fork the repository to your GitHub account and clone it locally.
     ```bash
-    git clone [https://github.com/YareBE/ModeLine.git](https://github.com/YareBE/ModeLine.git)
+    git clone https://github.com/YareBE/ModeLine.git
     cd ModeLine
     ```
 2.  **Environment Setup**: Install dependencies.
