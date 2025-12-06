@@ -9,7 +9,7 @@ sys.path.append(root_path)
 from backend.data_uploader import (
     dataset_error_handler,
     upload_joblib
-)
+)  # noqa: E402
 
 
 def upload_file():

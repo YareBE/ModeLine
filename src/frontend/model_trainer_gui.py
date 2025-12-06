@@ -13,8 +13,7 @@ from backend.model_trainer import (
     train_linear_regression,
     generate_formula,
     evaluate_model
-)
-
+)  # noqa: E402
 
 
 def train_model():

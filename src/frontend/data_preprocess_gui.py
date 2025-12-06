@@ -9,7 +9,7 @@ sys.path.append(root_path)
 
 from backend.data_preprocess import (
     apply_na_handling
-)
+)  # noqa: E402
 
 
 def reset_downstream_selections(level):

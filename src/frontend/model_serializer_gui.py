@@ -6,10 +6,7 @@ import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
 
-from backend.model_serializer import (
-    packet_creation
-)
-
+from backend.model_serializer import packet_creation  # noqa: E402
 
 
 def store_model():
