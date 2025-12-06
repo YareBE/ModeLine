@@ -73,7 +73,7 @@ def parameters_selection(df):
     # Validation: both selections must be complete
     if not st.session_state.features or not st.session_state.target:
         st.info("Select features and target")
-        return
+        return None
 
 
 def _features_selection(available_columns):
@@ -140,63 +140,85 @@ def na_handling_selection():
     selected_data = st.session_state.df[
         st.session_state.features + st.session_state.target
     ]
+    na_info = get_na_info(selected_data)
+
+    if na_info['count'] > 0 and st.session_state.processed_data is None:
+        handle_na_present(na_info, selected_data)
+    else:
+        handle_no_na(selected_data)
+
+
+def get_na_info(selected_data):
+    """Calculate NA-related information for the selected data."""
     # Count the total NA values in all the subset
     na_count = selected_data.isna().sum().sum()
+    # Calculate how many rows would be deleted
+    rows_with_na = selected_data.isna().any(axis=1).sum()
+    total_rows = len(selected_data)
+    return {
+        'count': na_count,
+        'rows_with_na': rows_with_na,
+        'total_rows': total_rows
+    }
 
-    # Just show a warning if there are NAs and they have been not processed
-    if na_count > 0 and st.session_state.processed_data is None:
-        st.warning(f"⚠️ {na_count} missing values")
 
-        # Calculate how many rows would be deleted
-        rows_with_na = selected_data.isna().any(axis=1).sum()
-        total_rows = len(selected_data)
-
-        options = ["Select method...", "Mean", "Median", "Constant"]
-        if rows_with_na < total_rows:
-            # Some rows are complete, "Delete rows" is safe
-            options.insert(1, "Delete rows")
-        else:
-            # All rows have NA, can't use "Delete rows"
-            st.warning(
-                "All rows contain NA values. 'Delete rows' option is disabled.")
-        na_method = st.selectbox("Filling method", options=options)
-
-        st.session_state.na_method = na_method
-        constant_value = None
-
-        # If the Constant method is selected, ask for the value
-        if na_method == "Constant":
-            constant_value = st.text_input("Constant value")
-
-        # Button to apply the selected method
-        if st.button("Apply", type="primary", use_container_width=True):
-            # Validation: there must be a selected method
-            if na_method == "Select method...":
-                st.error("Select a method")
-            # Validation: if the method is Constant, there must a value
-            elif na_method == "Constant" and not constant_value:
-                st.error("Enter a constant value")
-            else:
-                # Apply the imputation method
-                try:
-                    processed = apply_na_handling(
-                        selected_data, na_method, constant_value
-                    )
-                except Exception as e:
-                    st.error(f"error: {str(e)}")
-                    return
-                # Just save if there are still data after processing
-                if not processed.empty:
-                    st.session_state.processed_data = processed
-                # Rerun the app after updating the UI
-                st.rerun()
+def handle_na_present(na_info, selected_data):
+    """Handle UI and logic when NAs are present and not processed."""
+    st.warning(f"⚠️ {na_info['count']} missing values")
+    options = ["Select method...", "Mean", "Median", "Constant"]
+    if na_info['rows_with_na'] < na_info['total_rows']:
+        # Some rows are complete, "Delete rows" is safe
+        options.insert(1, "Delete rows")
     else:
-        # There are no more NA or they have been processed
-        st.success("✅ No missing values")
-        # If processed data had not been saved, save actual
-        if st.session_state.processed_data is None:
-            st.session_state.processed_data = selected_data
-        return
+        # All rows have NA, can't use "Delete rows"
+        st.warning(
+            "All rows contain NA values. 'Delete rows' option is disabled."
+        )
+    na_method = st.selectbox("Filling method", options=options)
+    st.session_state.na_method = na_method
+    constant_value = None
+
+    # If the Constant method is selected, ask for the value
+    if na_method == "Constant":
+        constant_value = st.text_input("Constant value")
+    
+    # Button to apply the selected method
+    if st.button("Apply", type="primary", use_container_width=True):
+        validate_and_apply(na_method, constant_value, selected_data)
+
+
+def validate_and_apply(na_method, constant_value, selected_data):
+    """Validate inputs and apply NA handling method."""
+    # Validation: there must be a selected method
+    if na_method == "Select method...":
+        st.error("Select a method")
+        return None
+    # Validation: if the method is Constant, there must a value
+    if na_method == "Constant" and not constant_value:
+        st.error("Enter a constant value")
+        return None
+    # Apply the imputation method
+    try:
+        processed = apply_na_handling(
+            selected_data, na_method, constant_value
+            )
+    except Exception as e:
+        st.error(f"error: {str(e)}")
+        return None
+    # Just save if there are still data after processing
+    if not processed.empty:
+        st.session_state.processed_data = processed
+        # Rerun the app after updating the UI
+        st.rerun()
+
+
+def handle_no_na(selected_data):
+    """Handle UI and logic when no NAs or already processed."""
+    # There are no more NA or they have been processed
+    st.success("✅ No missing values")
+    # If processed data had not been saved, save actual
+    if st.session_state.processed_data is None:
+        st.session_state.processed_data = selected_data
 
 
 def set_split():
