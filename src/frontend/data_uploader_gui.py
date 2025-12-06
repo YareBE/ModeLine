@@ -1,13 +1,15 @@
 # First of all, we need to access the backend directory from the root
-from backend.data_uploader import (
-    dataset_error_handler,
-    upload_joblib
-)
 import streamlit as st
+
 import sys
 import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
+
+from backend.data_uploader import (
+    dataset_error_handler,
+    upload_joblib
+)
 
 
 def upload_file():

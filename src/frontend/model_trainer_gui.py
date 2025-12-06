@@ -1,5 +1,12 @@
 # First of all, we need to access the backend directory from the root
 import numpy as np
+import streamlit as st
+
+import sys
+import os
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(root_path)
+
 from backend.model_trainer import (
     modeline_prediction,
     split_dataset,
@@ -7,11 +14,7 @@ from backend.model_trainer import (
     generate_formula,
     evaluate_model
 )
-import streamlit as st
-import sys
-import os
-root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(root_path)
+
 
 
 def train_model():

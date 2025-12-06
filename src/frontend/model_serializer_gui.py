@@ -1,12 +1,15 @@
 # First of all, we need to access the backend directory from the root
 import streamlit as st
-from backend.model_serializer import (
-    packet_creation
-)
+
 import sys
 import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
+
+from backend.model_serializer import (
+    packet_creation
+)
+
 
 
 def store_model():

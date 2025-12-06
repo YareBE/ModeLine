@@ -1,13 +1,15 @@
 # First of all, we need to access the backend directory from the root
 from display_utils import display_dataset_info
-from backend.data_preprocess import (
-    apply_na_handling
-)
 import streamlit as st
+
 import sys
 import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
+
+from backend.data_preprocess import (
+    apply_na_handling
+)
 
 
 def reset_downstream_selections(level):
