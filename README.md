@@ -15,14 +15,13 @@
 - [Usage](#usage)
 - [Feedback and Contributions](#feedback-and-contributions)
 - [License](#license)
-- [Support](#support)
 - [Contacts](#contacts)
 
 ---
 
 ## About
 
-ModeLine is an easy-to-use application for creating and visualizing linear regression models from any datasets. Users can upload datasets in multiple formats: .csv, .xslx, .db, etc. But also load previously saved scikit-learn models in a Modeline-Joblib format.
+ModeLine is an easy-to-use application for creating and visualizing linear regression models from any dataset. Users can upload datasets in multiple formats: .csv, .xslx, .db, etc. But also load previously saved scikit-learn models in a Modeline-Joblib format.
 
 The results can be visualized whit a clean, modern UI. The app provides: the model formula, evaluation metrics (R², MSE), descriptive and interactive charts using Plotly, functionalities to make predictions with your model and the option to download the models you create for reusability.
 
@@ -56,15 +55,47 @@ This project is ideal for students learning linear regression, beginner programm
 
 ## Installation
 
-Start using ModeLine with the following steps:
-  
+Follow this steps to start using ModeLine in your local Machine.
+The instructions are separated for Windows and Linux/macOS.
+
+---
+
+### Prerequisites
+
+- Python 3.9+
+- Git
+- pip (usually included with Python)
+- (Optional) Virtual environment
+
+---
+
+### Windows
 ```bash
 # Clone the repository
 git clone https://github.com/YareBE/ModeLine.git
-cd Modeline
+cd ModeLine
 
-# Create a virtual environment (optional but recommended)
+# Create a virtual environment and activate it (optional but recommended)
 python -m venv .venv
+.venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+streamlit run src/frontend/modeline.py
+```
+
+---
+
+### Linux/macOS
+```bash
+# Clone the repository
+git clone https://github.com/YareBE/ModeLine.git
+cd ModeLine
+
+# Create a virtual environment and activate it (optional but recommended)
+python3 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
