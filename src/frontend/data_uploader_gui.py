@@ -35,15 +35,7 @@ def upload_file():
 
     if st.session_state.file != uploaded_file:
         # Reset session state only when file actually changes
-        for key in st.session_state:
-            if key == "features" or key == "target":
-                # Reset selection lists to empty
-                st.session_state[key] = []
-            elif key in ["processed_data", "description", "model", "na_method",
-                         "df", "loaded_packet"]:
-                # Reset objects to None
-                st.session_state[key] = None
-        st.session_state["trainset_only"] = False
+        reset_session_state()
 
         # Store uploaded file reference
         st.session_state.file = uploaded_file
@@ -53,32 +45,50 @@ def upload_file():
         # Extract file extension for format detection
         extension = uploaded_file.name.split('.')[-1].lower()
         if extension != "joblib":
-            try:
-                # Handle datafile (CSV, Excel and SQLite)
-                df = dataset_error_handler(uploaded_file, extension)
-
-            except Exception as e:
-                st.error(f"{e}. Try a new file.")
-
-            else:
-                with st.spinner("Loading data..."):
-                    # Store DataFrame in session state
-                    st.session_state.df = df
-                    st.success("✅ Dataset correctly loaded.")
+            handle_data_file(uploaded_file, extension)
         else:
             # Handle model files (Joblib)
-            with st.spinner("Loading data..."):
-                try:
-                    # Load serialized model packet
-                    st.session_state.loaded_packet = upload_joblib(
-                        uploaded_file)
+            handle_model_file(uploaded_file)
 
-                except Exception as e:
-                    st.error(f"{e}. Try a new file.")
 
-                else:
-                    # Store model name without extension
-                    st.session_state.model_name = (
-                        uploaded_file.name.replace('.joblib', '')
-                    )
-                    st.success("✅ Model correctly loaded.")
+def reset_session_state():
+    """Reset relevant session_state keys when the file changes"""
+    for key in st.session_state:
+        if key == "features" or key == "target":
+            # Reset selection lists to empty
+            st.session_state[key] = []
+        elif key in ["processed_data", "description", "model", "na_method",
+                     "df", "loaded_packet"]:
+            # Reset objects to None
+            st.session_state[key] = None
+    st.session_state["trainset_only"] = False
+
+
+def handle_data_file(uploaded_file, extension):
+    """Handle loading of data (CSV, Excel, SQLite)"""
+    try:
+        # Handle datafile (CSV, Excel and SQLite)
+        df = dataset_error_handler(uploaded_file, extension)
+    except Exception as e:
+        st.error(f"{e}. Try a new file.")
+    else:
+        with st.spinner("Loading data..."):
+            # Store DataFrame in session state
+            st.session_state.df = df
+            st.success("✅ Dataset correctly loaded.")
+
+
+def handle_model_file(uploaded_file):
+    """Handle loading of model file (Joblib)"""
+    with st.spinner("Loading data..."):
+        try:
+            # Load serialized model packet
+            st.session_state.loaded_packet = upload_joblib(uploaded_file)
+        except Exception as e:
+            st.error(f"{e}. Try a new file.")
+        else:
+            # Store model name without extension
+            st.session_state.model_name = (
+                uploaded_file.name.replace('.joblib', '')
+            )
+            st.success("✅ Model correctly loaded.")

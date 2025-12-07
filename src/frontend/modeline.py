@@ -171,7 +171,7 @@ class Interface:
         if (st.session_state.processed_data is not None and
                 st.session_state.model is None):
             st.success("✅ Data ready for training!")
-            col1, col2, col3 = st.columns([1, 2, 1])
+            _, col2, _ = st.columns([1, 2, 1])
             with col2:
                 if st.button(
                     "TRAIN MODEL", type="primary",

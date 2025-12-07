@@ -50,8 +50,9 @@ def dataset_error_handler(file: BinaryIO, extension: str) -> pd.DataFrame:
         elif extension in ('db', 'sqlite'):
             # SQLite requires in-memory connection for querying
             data = _upload_sql(file)
-    except Exception as err:
-        raise Exception(err)
+    except Exception as e:  # Fallback for unexpected errors
+        raise RuntimeError(f"An unexpected error occurred while "
+                           f"processing the file: {str(e)}")
 
     else:
         # Validate loaded data is not empty

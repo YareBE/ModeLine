@@ -71,7 +71,7 @@ def display_dataframe() -> None:
     st.markdown("#### Dataset Preview")
 
     # Row range selector - show 100-row windows to avoid rendering huge tables
-    col1, col2 = st.columns([3, 1])
+    col1, _ = st.columns([3, 1])
     with col1:
         available_rows = [
             [i, min(i + 100, len(df))] for i in range(0, len(df), 100)
@@ -250,7 +250,9 @@ def _make_trace(x, y, name, color, size=5, opacity=0.5, symbol=None):
     """
     return go.Scattergl(
         x=x, y=y, mode='markers', name=name,
-        marker=dict(size=size, color=color, opacity=opacity, symbol=symbol)
+        marker={
+            'size': size, 'color': color, 'opacity': opacity, 'symbol': symbol
+        }
     )
 
 
@@ -306,8 +308,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
             x=[min_val, max_val], y=[min_val, max_val],
             mode='lines',
             name='Perfect',
-            line=dict(color='black', width=2, dash='dash')
-        )
+            line={'color': 'black', 'width': 2, 'dash': 'dash'})
     )
 
     def_fig.update_layout(
@@ -316,7 +317,7 @@ def _create_default_plot(y_train, y_train_pred, y_test, y_test_pred):
         yaxis_title='Predicted',
         template='plotly_white',
         height=700,
-        yaxis=dict(scaleanchor="x", scaleratio=1)
+        yaxis={'scaleanchor': "x", 'scaleratio': 1}
     )
 
     return def_fig
@@ -354,15 +355,15 @@ def _create_1d_plot(X_train, X_test, y_train, y_test, y_train_pred, model):
 
     # Regression line
     x_min, x_max = x_train.min(), x_train.max()
-    X_range = np.linspace(x_min, x_max, 100).reshape(-1, 1)
-    y_pred_range = model.predict(X_range)
+    x_range = np.linspace(x_min, x_max, 100).reshape(-1, 1)
+    y_pred_range = model.predict(x_range)
 
     fig.add_trace(go.Scattergl(
-        x=X_range.ravel(),
+        x=x_range.ravel(),
         y=y_pred_range.ravel(),
         mode='lines',
         name='Regression',
-        line=dict(color='#F18F01', width=3)
+        line={'color': '#F18F01', 'width': 3}
     ))
 
     fig.update_layout(
@@ -397,7 +398,8 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
         return go.Scatter3d(
             x=x, y=y, z=z,
             mode="markers", name=name,
-            marker=dict(size=size, color=color, opacity=opacity, symbol=symbol)
+            marker={'size': size, 'color': color,
+                    'opacity': opacity, 'symbol': symbol}
         )
 
     x1_train = X_train.iloc[:, 0].to_numpy()
@@ -426,8 +428,8 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
     x2_range = np.linspace(x2_train.min(), x2_train.max(), 25)
 
     x1_grid, x2_grid = np.meshgrid(x1_range, x2_range)
-    X_grid = np.c_[x1_grid.ravel(), x2_grid.ravel()]
-    z_grid = model.predict(X_grid).reshape(x1_grid.shape)
+    x_grid = np.c_[x1_grid.ravel(), x2_grid.ravel()]
+    z_grid = model.predict(x_grid).reshape(x1_grid.shape)
 
     fig.add_trace(go.Surface(
         x=x1_range, y=x2_range, z=z_grid,
@@ -439,11 +441,11 @@ def _create_3d_plot(X_train, X_test, y_train, y_test, model):
 
     fig.update_layout(
         title="3D Linear Regression",
-        scene=dict(
-            xaxis_title=X_train.columns[0],
-            yaxis_title=X_train.columns[1],
-            zaxis_title=y_train.columns[0],
-        ),
+        scene={
+            'xaxis_title': X_train.columns[0],
+            'yaxis_title': X_train.columns[1],
+            'zaxis_title': y_train.columns[0],
+        },
         template='plotly_white',
         height=700
     )
@@ -466,25 +468,39 @@ def display_uploaded_model():
     Returns:
         None
     """
-    col_title, col_badge = st.columns([3, 1])
+    display_title()
+    packet = st.session_state.loaded_packet
+    display_description(packet)
+    display_formula(packet)
+    display_configuration(packet)
+    display_metrics(packet)
+
+
+def display_title():
+    """Display the model title"""
+    col_title, _ = st.columns([3, 1])
     with col_title:
         st.header(f"{st.session_state.model_name}")
 
-    packet = st.session_state.loaded_packet
 
-    # Description (optional)
+def display_description(packet):
+    """Display the model description (Optional)"""
     st.subheader("Description")
     if packet.get("description"):
         st.info(packet["description"])
     else:
         st.warning("No description provided")
 
-    # Formula / code string (optional)
+
+def display_formula(packet):
+    """Display the model formula"""
     if packet.get("formula"):
         st.subheader("Formula")
         st.code(packet["formula"], language="python")
 
-    # Features and target information
+
+def display_configuration(packet):
+    """Display features and target configuration"""
     st.subheader("Model Configuration")
     col1, col2 = st.columns(2)
 
@@ -506,7 +522,9 @@ def display_uploaded_model():
         else:
             st.warning("No target information")
 
-    # Performance metrics section
+
+def display_metrics(packet):
+    """Display performance metrics"""
     st.divider()
     st.subheader("Performance Metrics")
 

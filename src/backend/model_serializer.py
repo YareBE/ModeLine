@@ -48,65 +48,13 @@ def packet_creation(
         TypeError: If parameters have incorrect types.
         RuntimeError: If serialization to joblib format fails.
     """
-    # Validate model
-    if model is not None and isinstance(model, LinearRegression):
-        try:
-            check_is_fitted(model)
-        except NotFittedError:
-            raise ValueError("Model must be fitted")
-    else:
-        raise ValueError("Model must exist")
-
-    # Validate description - convert None to empty string
-    if description is None:
-        description = ""
-    elif not isinstance(description, str):
-        raise TypeError(
-            f"description must be str, got "
-            f"{type(description).__name__}")
-
-    # Validate features - must be non-empty list/tuple of strings
-    if features is None or (
-        isinstance(
-            features,
-            (list,
-             tuple)) and len(features) == 0):
-        raise ValueError("features cannot be None or empty")
-    if not isinstance(features, (list, tuple)):
-        raise TypeError(
-            f"features must be list/tuple, got {type(features).__name__}")
-    if not all(isinstance(f, str) for f in features):
-        raise TypeError("All features must be strings")
-
-    # Validate target - must be single-element list/tuple with string
-    if target is None or (isinstance(target, (list, tuple))
-                          and len(target) == 0):
-        raise ValueError("target cannot be None or empty")
-    if not isinstance(target, (list, tuple)):
-        raise TypeError(
-            f"target must be list/tuple, got {type(target).__name__}")
-    if len(target) != 1:
-        raise ValueError(
-            f"target must contain exactly 1 element, got "
-            f"{len(target)}")
-    if not isinstance(target[0], str):
-        raise TypeError("target element must be string")
-
-    # Validate formula - must be non-empty string
-    if formula is None:
-        raise ValueError("formula cannot be None")
-    if not isinstance(formula, str):
-        raise TypeError(f"formula must be str, got {type(formula).__name__}")
-    if len(formula.strip()) == 0:
-        raise ValueError("formula cannot be empty string")
-
-    # Validate metrics - must be non-empty dict
-    if metrics is None:
-        raise ValueError("metrics cannot be None")
-    if not isinstance(metrics, dict):
-        raise TypeError(f"metrics must be dict, got {type(metrics).__name__}")
-    if len(metrics) == 0:
-        raise ValueError("metrics cannot be empty")
+    # Validate all inputs
+    validate_model(model)
+    validate_description(description)
+    validate_features(features)
+    validate_target(target)
+    validate_formula(formula)
+    validate_metrics(metrics)
 
     # Build packet dictionary with model and metadata
     try:
@@ -139,3 +87,73 @@ def packet_creation(
             f"Cannot serialize packet (non-serializable object): {str(e)}")
     except Exception as e:
         raise RuntimeError(f"Error serializing packet to joblib: {str(e)}")
+
+
+def validate_model(model: LinearRegression) -> None:
+    """Validate the LinearRegression model"""
+    if model is not None and isinstance(model, LinearRegression):
+        try:
+            check_is_fitted(model)
+        except NotFittedError:
+            raise ValueError("Model must be fitted")
+    else:
+        raise ValueError("Model must exist")
+
+
+def validate_description(description: str) -> None:
+    """Validate the description parameter"""
+    if description is None:
+        description = ""
+    elif not isinstance(description, str):
+        raise TypeError(
+            f"description must be str, got "
+            f"{type(description).__name__}")
+
+
+def validate_features(features: List[str]) -> None:
+    """Validate the features parameter"""
+    if features is None or (
+        isinstance(features, (list, tuple)) and len(features) == 0
+    ):
+        raise ValueError("features cannot be None or empty")
+    if not isinstance(features, (list, tuple)):
+        raise TypeError(
+            f"features must be list/tuple, got {type(features).__name__}")
+    if not all(isinstance(f, str) for f in features):
+        raise TypeError("All features must be strings")
+
+
+def validate_target(target: List[str]) -> None:
+    """Validate the target parameter"""
+    if target is None or (isinstance(target, (list, tuple))
+                          and len(target) == 0):
+        raise ValueError("target cannot be None or empty")
+    if not isinstance(target, (list, tuple)):
+        raise TypeError(
+            f"target must be list/tuple, got {type(target).__name__}")
+    if len(target) != 1:
+        raise ValueError(
+            f"target must contain exactly 1 element, got "
+            f"{len(target)}")
+    if not isinstance(target[0], str):
+        raise TypeError("target element must be string")
+
+
+def validate_formula(formula: str) -> None:
+    """Validate the formula parameter"""
+    if formula is None:
+        raise ValueError("formula cannot be None")
+    if not isinstance(formula, str):
+        raise TypeError(f"formula must be str, got {type(formula).__name__}")
+    if len(formula.strip()) == 0:
+        raise ValueError("formula cannot be empty string")
+
+
+def validate_metrics(metrics: Dict[str, Dict[str, float]]) -> None:
+    """Validate the metrics parameter"""
+    if metrics is None:
+        raise ValueError("metrics cannot be None")
+    if not isinstance(metrics, dict):
+        raise TypeError(f"metrics must be dict, got {type(metrics).__name__}")
+    if len(metrics) == 0:
+        raise ValueError("metrics cannot be empty")
