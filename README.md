@@ -123,7 +123,7 @@ Once the app is running:
 ## Feedback and Contributions
 We've made every effort to make out application the most complete possible, however we may have encountered many errors. Whether you have feedback on features, have encountered any bugs, or have suggestions for enhancements, we're eager to hear from you. Your insights make ModeLine more robust and user-friendly.
 
-Please feel free to contribute by submitting an issue or joining the discussions. Each contribution helps us to grow and improve. Please check [CONTRIBUTING.md](https://github.com/YareBE/ModeLine/blob/main/docs/CONTRIBUTING.md) for further details.
+Please feel free to contribute by submitting an issue or joining the discussions. Each contribution helps us to grow and improve. Please check [CONTRIBUTING.md](https://github.com/YareBE/ModeLine/blob/main/CONTRIBUTING.md) for further details.
 
 We appreciate your support and look forward to making our product even better with your help!
 

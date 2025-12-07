@@ -572,5 +572,5 @@
 ---
 
 ## FINAL NOTES
-- **Total tests:** 200+
+- **Total tests:** 45+
 - **Coverage:** Data loading, selection, preprocessing, split, training, prediction, saving/loading, validations, edge cases, backend functions
