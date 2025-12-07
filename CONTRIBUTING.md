@@ -10,6 +10,46 @@ If you have not already done it, set up the repository on your local machine by 
 
 [Installation Guide](https://github.com/YareBE/ModeLine/blob/main/README.md#installation)
 
+## Project Structure
+
+Here is the current repository layout. Please ensure you place new files in the correct directories:
+
+```text
+ModeLine/
+├── .github/
+│   └── workflows/
+│       └── ci.yaml
+├── docs/
+│   └── TEST_PLAN.md          # Functional testing guide
+├── images/
+|   ├── example1.png
+│   └── example2.png          # Visual resources
+├── src/
+│   ├── backend/              # Core logic (Training, Serialization)
+│   │   ├── uploader.py
+│   │   ├── trainer.py
+│   │   ├── preprocessing.py
+│   │   └── serializer.py
+│   └── frontend/             # Streamlit UI components
+│       ├── display_utils.py
+│       ├── modeline.py
+│       ├── preprocessing_gui.py
+│       ├── serializer_gui.py
+│       ├── trainer_gui.py
+│       └── uploader_gui.py
+├── tests/                    # Automated unit tests
+│   ├── test_preprocessing.py
+│   ├── test_serializer.py
+│   ├── test_trainer.py
+│   └── test_uploader.py
+├── .gitignore
+├── CONTRIBUTING.md           # Contribution guidelines
+├── LICENSE
+├── README.md
+├── requirements.txt          # Production dependencies
+└── requirements-dev.txt      # Development dependencies
+```
+
 ## Workflow & Branches
 
 **We do not allow direct commits to `main`.** All changes must come through a Pull Request (PR).
