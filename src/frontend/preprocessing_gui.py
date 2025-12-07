@@ -7,7 +7,7 @@ import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
 
-from backend.data_preprocess import (
+from backend.preprocessing import (
     apply_na_handling
 )  # noqa: E402
 

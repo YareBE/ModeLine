@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from io import BytesIO
-from src.backend.data_preprocess import apply_na_handling
+from src.backend.preprocessing import apply_na_handling
 from src.frontend.display_utils import get_numeric_columns, get_na_info
 
 

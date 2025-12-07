@@ -6,7 +6,7 @@ import os
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root_path)
 
-from backend.data_uploader import (
+from backend.uploader import (
     dataset_error_handler,
     upload_joblib
 )  # noqa: E402

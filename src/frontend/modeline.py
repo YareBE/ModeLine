@@ -7,15 +7,15 @@ docstrings.
 """
 
 import streamlit as st
-from data_uploader_gui import (
+from uploader_gui import (
     upload_file
 )
-from data_preprocess_gui import (
+from preprocessing_gui import (
     parameters_selection,
     na_handling_selection,
     set_split
 )
-from model_trainer_gui import (
+from trainer_gui import (
     train_model,
     predict
 )
@@ -25,7 +25,7 @@ from display_utils import (
     plot_results,
     display_uploaded_model,
 )
-from model_serializer_gui import (
+from serializer_gui import (
     store_model
 )
 

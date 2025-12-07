@@ -1,4 +1,4 @@
-import src.backend.model_trainer as trainer
+import src.backend.trainer as trainer
 from sklearn.linear_model import LinearRegression
 import pandas as pd
 import numpy as np

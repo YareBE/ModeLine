@@ -3,7 +3,7 @@ import numpy as np
 import io
 import joblib
 from sklearn.linear_model import LinearRegression
-from src.backend.model_serializer import packet_creation
+from src.backend.serializer import packet_creation
 import threading  # Used for catching an exception
 
 
