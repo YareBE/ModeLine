@@ -47,12 +47,6 @@ This project is ideal for students learning linear regression, beginner programm
 
 ---
 
-## Visuals
-![Example of Modeline 1](./images/example1.png)
-![Example of Modeline 2](./images/example2.png)
-
----
-
 ## Installation
 
 Follow this steps to start using ModeLine in your local Machine.
@@ -107,16 +101,24 @@ streamlit run src/frontend/modeline.py
 
 ---
 
-## Usage
+## User handbook
 
-Once the app is running:
+Although the app provides an usage guide, here is a well detailed and visual-supported one, to make things as clear as possible:
 
-1. Upload a dataset (`.csv`, `.xlsx`, etc.) or load an existing model (`.joblib`).
+1. First of all, upload a dataset (`.csv`, `.xlsx`, `.db`...) or an existing model (`.joblib`). You can always upload a new file using this widget.
+![upload screen](./images/upload_screen.png)
 2. If you loaded a model, you can immediately visualize its results and make predictions.
-3. If you uploaded a new dataset, select the features and target variable for your regression model.
-4. Handle missing values by choosing a substitution method: Mean, Median, Delete, or Constant.
-5. View the model formula, evaluation metrics (R², MSE), and interactive plots.
-6. Make predictions or download the trained model for reuse.
+![loaded model screen](./images/loaded_model_screen.png)
+3. On the other hand, if it was a dataset, select the features and target variable for your regression model.
+![loaded dataset screen](./images/loaded_dataset_screen.png)
+4. Manage any missing values by choosing a substitution method: Mean, Median, Delete, or Constant.
+![na handling screen](./images/na_handling_screen.png)
+5. Choose a generation seed, training set size and train your model whenever you are ready!
+![split train screen](./images/split_train_screen.png)
+6. Visualize the plots and metrics and make predictions with your model
+![predictions screen](./images/predictions_screen.png)
+7. Choose a name, a description, and store your model locally
+![saving model screen](./images/saving_model_screen.png)
 
 ---
 
