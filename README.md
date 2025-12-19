@@ -106,12 +106,15 @@ streamlit run src/frontend/modeline.py
 Although the app provides an usage guide, here is a well detailed and visual-supported one, to make things as clear as possible:
 
 1. First of all, upload a dataset (`.csv`, `.xlsx`, `.db`...) or an existing model (`.joblib`). You can always upload a new file using this widget.
+Please keep in mind that if your dataset has less than 10 rows, some app functionalities described below such as set-splitting will vary or not be able.
 ![upload screen](./images/upload_screen.png)
-2. If you loaded a model, you can immediately visualize its results and make predictions.
+2. If you load a modeline-joblib file, you can immediately visualize its results and make predictions.
 ![loaded model screen](./images/loaded_model_screen.png)
-3. On the other hand, if it was a dataset, select the features and target variable for your regression model.
+3. On the other hand, if it was a dataset, select the features and target variables for your regression model. 
+The dataframe will highlight the selected parameters, you can choose the window of rows to be displayed.
 ![loaded dataset screen](./images/loaded_dataset_screen.png)
-4. Manage any missing values by choosing a substitution method: Mean, Median, Delete, or Constant.
+4. Manage any missing values by choosing a substitution method: Mean, Median, Delete, or Constant. The dataframe will show the updated values.
+If you change your mind, you can always start from the beginning selecting new parameters and the NA substitution will be undone.
 ![na handling screen](./images/na_handling_screen.png)
 5. Choose a generation seed, training set size and train your model whenever you are ready!
 ![split train screen](./images/split_train_screen.png)
