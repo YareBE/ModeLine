@@ -21,9 +21,9 @@ ModeLine/
 │       └── ci.yaml
 ├── docs/
 │   └── TEST_PLAN.md          # Functional testing guide
-├── images/
+├── images/                   # Visual resources
 |   ├── example1.png
-│   └── example2.png          # Visual resources
+│   └── example2.png          
 ├── src/
 │   ├── backend/              # Core logic (Training, Serialization)
 │   │   ├── uploader.py
