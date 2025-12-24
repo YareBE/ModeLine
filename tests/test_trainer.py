@@ -90,19 +90,19 @@ def test_inputs_validation_no_parameters(unexisting_inputs):
     """Test for validating with no features or target"""
     with pytest.raises(ValueError, match="cannot be None"):
         X, y = unexisting_inputs
-        trainer.validate_inputs(X, y, 0.5)
+        trainer._validate_inputs(X, y, 0.5)
 
 
 def test_inputs_validation_different_lengths():
     """Test for validating with not the same length of features and target"""
     with pytest.raises(ValueError, match="must have same length"):
-        trainer.validate_inputs(pd.DataFrame([1, 2]), pd.DataFrame([5]), 0.5)
+        trainer._validate_inputs(pd.DataFrame([1, 2]), pd.DataFrame([5]), 0.5)
 
 
 def test_inputs_validation_empty_inputs():
     """Test for validating with empty datasets"""
     with pytest.raises(ValueError, match="cannot be empty"):
-        trainer.validate_inputs(pd.DataFrame([]), pd.DataFrame([]), 0.5)
+        trainer._validate_inputs(pd.DataFrame([]), pd.DataFrame([]), 0.5)
 
 
 @pytest.mark.parametrize("invalid_training_size", [
@@ -114,7 +114,7 @@ def test_inputs_validation_invalid_training_size(
     """Test for validating with invalid training sizes"""
     with pytest.raises(ValueError, match="must be between 0 and 1"):
         X, y = small_dataset_mock
-        trainer.validate_inputs(X, y, invalid_training_size)
+        trainer._validate_inputs(X, y, invalid_training_size)
 
 
 @pytest.mark.parametrize("valid_training_size", [
@@ -126,7 +126,7 @@ def test_inputs_validation_proper_cases(
         small_dataset_mock, valid_training_size):
     """Test for validating inputs with correct cases"""
     X, y = small_dataset_mock
-    trainer.validate_inputs(X, y, valid_training_size)
+    trainer._validate_inputs(X, y, valid_training_size)
 
 
 # --- TEST DATAFRAME CONVERTER ---
@@ -140,7 +140,7 @@ def test_dataframe_converter_invalid_types(invalid_dataframe_types):
     """Test for capturing invalid 'array-like' inputs"""
     X, y = invalid_dataframe_types
     with pytest.raises(TypeError, match="was not possible"):
-        trainer.ensure_dataframe(X, y)
+        trainer._ensure_dataframe(X, y)
 
 
 @pytest.mark.parametrize("proper_dataframe_types", [
@@ -152,7 +152,7 @@ def test_dataframe_converter_proper_types(proper_dataframe_types):
     """Test for capturing valid inputs and converting them"""
     # Unpack the tuple from parameters
     input_X, input_y = proper_dataframe_types
-    X, y = trainer.ensure_dataframe(input_X, input_y)
+    X, y = trainer._ensure_dataframe(input_X, input_y)
     assert isinstance(X, pd.DataFrame) and isinstance(y, pd.DataFrame)
 
 
