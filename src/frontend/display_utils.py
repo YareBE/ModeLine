@@ -10,6 +10,14 @@ import numpy as np
 import plotly.graph_objects as go
 from typing import List, Any
 import pandas as pd
+import os
+import sys
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(root_path)
+
+from backend.preprocessing import (
+    get_na_info, get_numeric_columns
+)  # noqa: E402
 
 
 def display_dataframe() -> None:
