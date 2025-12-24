@@ -10,9 +10,8 @@
 
 - [About](#about)
 - [Features](#features)
-- [Visuals](#visuals)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Usage](#user-handbook)
 - [Feedback and Contributions](#feedback-and-contributions)
 - [License](#license)
 - [Contacts](#contacts)
@@ -30,6 +29,7 @@ ModeLine adheres to high standards of flexibility, reusability, and reliability,
   - Modularity: Different parts of the library can function independently, enhancing the library's modularity and allowing for easier maintenance and updates.
   - Testability: Improved separation of concerns makes the code more testable.
   - Maintainability: Clear structure and separation facilitate better management of the codebase.
+  - Information hiding: Internal functions have been "underscored", meaning they **should** not be used independently, thus covering private processes of a module and exposing only the necessary ones.
 
 This project is ideal for students learning linear regression, beginner programmers, or experienced users like data scientists who need to quickly create regression models.
 
