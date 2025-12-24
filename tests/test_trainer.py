@@ -206,8 +206,8 @@ def test_split_reproducibility(big_dataset_mock):
     """Test for checking if the splitting is repeateable"""
     X, y = big_dataset_mock
 
-    X_tr1, X_te1, y_tr1, y_te1 = trainer.split_dataset(X, y, 0.8, 18)
-    X_tr2, X_te2, y_tr2, y_te2 = trainer.split_dataset(X, y, 0.8, 18)
+    X_tr1, _, _, y_te1 = trainer.split_dataset(X, y, 0.8, 18)
+    X_tr2, _, _, y_te2 = trainer.split_dataset(X, y, 0.8, 18)
 
     np.testing.assert_array_equal(X_tr1, X_tr2)
     np.testing.assert_array_equal(y_te1, y_te2)
@@ -316,7 +316,7 @@ def test_evaluate_model_train_only(small_dataset_mock):
     model = LinearRegression()
     model.fit(X_train, y_train)
 
-    y_tr_pred, y_te_pred, metrics = trainer.evaluate_model(
+    _, y_te_pred, metrics = trainer.evaluate_model(
         model, X_train, y_train
     )
 

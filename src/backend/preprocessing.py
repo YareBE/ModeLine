@@ -6,8 +6,41 @@ All functions include type hints and comprehensive docstrings.
 """
 
 import streamlit as st
-from typing import Optional, Union
+from typing import Optional, Union, List
 import pandas as pd
+
+
+@st.cache_data(show_spinner=False)
+def get_numeric_columns(df: pd.DataFrame) -> List[str]:
+    """Return the list of numeric column names from a DataFrame.
+
+    Inspects a DataFrame and returns column names containing numeric data types
+    (int, float, etc.). Excludes columns with object, string, or categorical types.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame to inspect.
+
+    Returns:
+        List[str]: Column names of numeric dtype.
+    """
+    return df.select_dtypes(include=['number']).columns.tolist()
+
+
+@st.cache_data(show_spinner=False)
+def get_na_info(df: pd.DataFrame) -> List[str]:
+    """Return a list of columns that contain missing values.
+
+    Scans the DataFrame to identify any columns with NaN/None values
+    and returns their names. Useful for deciding NA handling strategy.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame to inspect.
+
+    Returns:
+        List[str]: Column names that have at least one NA/NaN value.
+    """
+    cols_with_na = df.columns[df.isna().any()].tolist()
+    return cols_with_na
 
 
 @st.cache_data(show_spinner=False)

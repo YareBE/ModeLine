@@ -2,7 +2,8 @@ import pytest
 import pandas as pd
 import numpy as np
 from io import BytesIO
-from src.backend.uploader import _upload_csv, _upload_excel, dataset_error_handler
+from src.backend.uploader import (_upload_csv, _upload_excel,
+    dataset_error_handler)
 
 @pytest.fixture
 def sample_df():
