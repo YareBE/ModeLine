@@ -19,11 +19,14 @@ ModeLine/
 ├── .github/
 │   └── workflows/
 │       └── ci.yaml
-├── docs/
-│   └── TEST_PLAN.md          # Functional testing guide
 ├── images/                   # Visual resources
-|   ├── example1.png
-│   └── example2.png          
+│   ├── loaded_dataset_screen.png
+│   ├── loaded_model_screen.png
+│   ├── na_handling_screen.png
+│   ├── predictions_screen.png
+│   ├── saving_model_screen.png
+│   ├── split_train_screen.png
+│   └── upload_screen.png       
 ├── src/
 │   ├── backend/              # Core logic (Training, Serialization)
 │   │   ├── uploader.py
@@ -41,7 +44,8 @@ ModeLine/
 │   ├── test_preprocessing.py
 │   ├── test_serializer.py
 │   ├── test_trainer.py
-│   └── test_uploader.py
+│   ├── test_uploader.py
+│   └── TESTS_PLAN.md          # Functional testing guide
 ├── .gitignore
 ├── CONTRIBUTING.md           # Contribution guidelines
 ├── LICENSE
