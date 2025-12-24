@@ -49,12 +49,12 @@ def packet_creation(
         RuntimeError: If serialization to joblib format fails.
     """
     # Validate all inputs
-    validate_model(model)
-    validate_description(description)
-    validate_features(features)
-    validate_target(target)
-    validate_formula(formula)
-    validate_metrics(metrics)
+    _validate_model(model)
+    _validate_description(description)
+    _validate_features(features)
+    _validate_target(target)
+    _validate_formula(formula)
+    _validate_metrics(metrics)
 
     # Build packet dictionary with model and metadata
     try:
@@ -89,7 +89,7 @@ def packet_creation(
         raise RuntimeError(f"Error serializing packet to joblib: {str(e)}")
 
 
-def validate_model(model: LinearRegression) -> None:
+def _validate_model(model: LinearRegression) -> None:
     """Validate the LinearRegression model"""
     if model is not None and isinstance(model, LinearRegression):
         try:
@@ -100,7 +100,7 @@ def validate_model(model: LinearRegression) -> None:
         raise ValueError("Model must exist")
 
 
-def validate_description(description: str) -> None:
+def _validate_description(description: str) -> None:
     """Validate the description parameter"""
     if description is None:
         description = ""
@@ -110,7 +110,7 @@ def validate_description(description: str) -> None:
             f"{type(description).__name__}")
 
 
-def validate_features(features: List[str]) -> None:
+def _validate_features(features: List[str]) -> None:
     """Validate the features parameter"""
     if features is None or (
         isinstance(features, (list, tuple)) and len(features) == 0
@@ -123,7 +123,7 @@ def validate_features(features: List[str]) -> None:
         raise TypeError("All features must be strings")
 
 
-def validate_target(target: List[str]) -> None:
+def _validate_target(target: List[str]) -> None:
     """Validate the target parameter"""
     if target is None or (isinstance(target, (list, tuple))
                           and len(target) == 0):
@@ -139,7 +139,7 @@ def validate_target(target: List[str]) -> None:
         raise TypeError("target element must be string")
 
 
-def validate_formula(formula: str) -> None:
+def _validate_formula(formula: str) -> None:
     """Validate the formula parameter"""
     if formula is None:
         raise ValueError("formula cannot be None")
@@ -149,7 +149,7 @@ def validate_formula(formula: str) -> None:
         raise ValueError("formula cannot be empty string")
 
 
-def validate_metrics(metrics: Dict[str, Dict[str, float]]) -> None:
+def _validate_metrics(metrics: Dict[str, Dict[str, float]]) -> None:
     """Validate the metrics parameter"""
     if metrics is None:
         raise ValueError("metrics cannot be None")

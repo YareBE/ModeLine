@@ -73,7 +73,7 @@ def modeline_prediction(model: LinearRegression, inputs: list) -> float:
         raise RuntimeError(f"Unexpected error during prediction: {str(e)}")
 
 
-def validate_inputs(
+def _validate_inputs(
         X: pd.DataFrame,
         y: pd.DataFrame,
         train_size: float) -> None:
@@ -115,7 +115,7 @@ def validate_inputs(
         raise ValueError("train_size must be between 0 and 1")
 
 
-def ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def _ensure_dataframe(X: Any, y: Any) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Convert array-like inputs to pandas DataFrames.
 
     Flexible input converter that accepts arrays, lists, or DataFrames
@@ -187,10 +187,10 @@ def split_dataset(X: pd.DataFrame,
     """
 
     # Validate inputs
-    validate_inputs(X, y, train_size)
+    _validate_inputs(X, y, train_size)
 
     # Ensure inputs are DataFrames
-    X, y = ensure_dataframe(X, y)
+    X, y = _ensure_dataframe(X, y)
 
     # Validate split_seed is a valid non-negative integer
     try:
@@ -242,10 +242,10 @@ def train_linear_regression(
     """
 
     # Validate inputs
-    validate_inputs(X_train, y_train, 0.5)  # ->Dummy train_size
+    _validate_inputs(X_train, y_train, 0.5)  # ->Dummy train_size
 
     # Ensure inputs are DataFrames
-    X_train, y_train = ensure_dataframe(X_train, y_train)
+    X_train, y_train = _ensure_dataframe(X_train, y_train)
 
     # Fit LinearRegression model
     try:
