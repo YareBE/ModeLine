@@ -20,9 +20,9 @@
 
 ## About
 
-ModeLine is an easy-to-use application for creating and visualizing linear regression models from any dataset. Users can upload datasets in multiple formats: .csv, .xslx, .db, etc. But also load previously saved scikit-learn models in a Modeline-Joblib format.
+ModeLine is an easy-to-use application for creating and visualizing linear regression models from any dataset. Users can upload datasets in multiple formats: .csv, .xlsx, .db, etc. But also load previously saved scikit-learn models in a Modeline-Joblib format.
 
-The results can be visualized whit a clean, modern UI. The app provides: the model formula, evaluation metrics (R², MSE), descriptive and interactive charts using Plotly, functionalities to make predictions with your model and the option to download the models you create for reusability.
+The results can be visualized with a clean, modern UI. The app provides: the model formula, evaluation metrics (R², MSE), descriptive and interactive charts using Plotly, functionalities to make predictions with your model and the option to download the models you create for reusability.
 
 ModeLine adheres to high standards of flexibility, reusability, and reliability, utilizing a well-known software design methodology (Scrum) and patterns. These patterns ensure the following benefits:
 
@@ -49,7 +49,7 @@ This project is ideal for students learning linear regression, beginner programm
 
 ## Installation
 
-Follow this steps to start using ModeLine in your local Machine.
+Follow these steps to start using ModeLine in your local Machine.
 The instructions are separated for Windows and Linux/macOS.
 
 ---
