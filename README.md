@@ -12,9 +12,8 @@
 
 - [About](#about)
 - [Features](#features)
-- [Visuals](#visuals)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Usage](#user-handbook)
 - [Feedback and Contributions](#feedback-and-contributions)
 - [License](#license)
 - [Contacts](#contacts)
@@ -63,6 +62,7 @@ This project is ideal for students learning linear regression, beginner programm
 
 ## Installation
 
+Follow these steps to start using ModeLine in your local Machine.
 Follow these steps to start using ModeLine in your local Machine.
 The instructions are separated for Windows and Linux/macOS.
 
