@@ -323,6 +323,38 @@ def generate_formula(
         raise RuntimeError(f"Error generating formula: {str(e)}")
 
 
+def adjusted_r2(
+    r2: float,
+    n_samples: int,
+    n_features: int
+) -> Optional[float]:
+    """Adjust an R² score for the number of predictors used to fit the model.
+
+    Plain R² never decreases when a predictor is added, even a useless one, so
+    it cannot be used to compare models fitted on different feature sets. That
+    is exactly what a user of this app does: pick some columns, fit, then pick
+    different columns and fit again. Adjusted R² charges for each extra
+    predictor, so it can fall when a feature earns nothing:
+
+        adjusted R² = 1 - (1 - R²) * (n - 1) / (n - p - 1)
+
+    Args:
+        r2 (float): The plain coefficient of determination.
+        n_samples (int): Number of samples the score was computed on.
+        n_features (int): Number of predictors used to fit the model.
+
+    Returns:
+        Optional[float]: The adjusted score, or None when it is undefined.
+            That happens once the sample count stops exceeding the predictor
+            count by at least two, since the denominator n - p - 1 is then
+            zero or negative.
+    """
+    degrees_of_freedom = n_samples - n_features - 1
+    if degrees_of_freedom <= 0:
+        return None
+    return float(1 - (1 - r2) * (n_samples - 1) / degrees_of_freedom)
+
+
 def evaluate_model(
     model: LinearRegression,
     X_train: pd.DataFrame,
@@ -332,7 +364,8 @@ def evaluate_model(
 ) -> Tuple[np.ndarray, Optional[np.ndarray], Dict[str, Dict[str, float]]]:
     """Evaluate model performance on training and optional test data.
 
-    Computes R² (coefficient of determination) and MSE (mean squared error) metrics.
+    Computes R² (coefficient of determination), R² adjusted for the number of
+    predictors, and MSE (mean squared error).
     Always returns training metrics; test metrics included only if test data provided.
     Returns model predictions alongside metrics for further analysis.
 
@@ -349,9 +382,11 @@ def evaluate_model(
             - y_test_pred: Model predictions on test data (None if no test set)
             - metrics: Dict with structure:
                 {
-                    'train': {'r2': float, 'mse': float},
-                    'test': {'r2': float, 'mse': float}  # Only if test set provided
+                    'train': {'r2': float, 'adj_r2': float | None, 'mse': float},
+                    'test': {'r2': float, 'adj_r2': float | None, 'mse': float}
                 }
+            'test' is present only when a test set was supplied, and 'adj_r2'
+            is None when there are too few samples for it to be defined.
 
     Raises:
         ValueError: If model is None.
@@ -362,13 +397,18 @@ def evaluate_model(
         raise ValueError("Model cannot be None")
 
     try:
+        # Number of predictors, needed to adjust R² for the size of the model
+        n_features = X_train.shape[1]
+
         # Get training predictions
         y_train_pred = model.predict(X_train)
 
         # Calculate training metrics
+        train_r2 = float(r2_score(y_train, y_train_pred))
         metrics = {
             'train': {
-                'r2': float(r2_score(y_train, y_train_pred)),
+                'r2': train_r2,
+                'adj_r2': adjusted_r2(train_r2, len(X_train), n_features),
                 'mse': float(mean_squared_error(y_train, y_train_pred))
             }
         }
@@ -376,8 +416,10 @@ def evaluate_model(
         # Calculate test metrics if test set provided
         if X_test is not None and y_test is not None:
             y_test_pred = model.predict(X_test)
+            test_r2 = float(r2_score(y_test, y_test_pred))
             metrics['test'] = {
-                'r2': float(r2_score(y_test, y_test_pred)),
+                'r2': test_r2,
+                'adj_r2': adjusted_r2(test_r2, len(X_test), n_features),
                 'mse': float(mean_squared_error(y_test, y_test_pred))
             }
             return y_train_pred, y_test_pred, metrics

@@ -323,3 +323,52 @@ def test_evaluate_model_train_only(small_dataset_mock):
     assert y_te_pred is None
     assert 'train' in metrics
     assert 'test' not in metrics
+
+
+# --- ADJUSTED R2 ---
+
+def test_adjusted_r2_known_value():
+    """Check the formula against a hand-computed case.
+
+    1 - (1 - 0.9) * (100 - 1) / (100 - 3 - 1) = 1 - 0.1 * 99 / 96
+    """
+    result = trainer.adjusted_r2(0.9, n_samples=100, n_features=3)
+    assert result == pytest.approx(1 - 0.1 * 99 / 96)
+
+
+def test_adjusted_r2_penalises_extra_predictors():
+    """Adding predictors at the same R2 must lower the adjusted score."""
+    few = trainer.adjusted_r2(0.8, n_samples=50, n_features=2)
+    many = trainer.adjusted_r2(0.8, n_samples=50, n_features=10)
+    assert many < few
+
+
+def test_adjusted_r2_never_above_plain_r2():
+    """With at least one predictor the adjustment can only cost, never pay."""
+    assert trainer.adjusted_r2(0.75, n_samples=40, n_features=1) <= 0.75
+
+
+def test_adjusted_r2_undefined_for_too_few_samples():
+    """n - p - 1 <= 0 leaves the statistic undefined, so it returns None
+    instead of dividing by zero or producing a nonsense figure."""
+    assert trainer.adjusted_r2(0.9, n_samples=4, n_features=3) is None
+    assert trainer.adjusted_r2(0.9, n_samples=3, n_features=5) is None
+
+
+def test_evaluate_model_reports_adjusted_r2(model_mock):
+    """evaluate_model must carry the adjusted score alongside R2 and MSE."""
+    X_train = pd.DataFrame(np.random.RandomState(0).rand(30, 2),
+                           columns=['a', 'b'])
+    y_train = pd.DataFrame(np.random.RandomState(1).rand(30), columns=['y'])
+    X_test = pd.DataFrame(np.random.RandomState(2).rand(12, 2),
+                          columns=['a', 'b'])
+    y_test = pd.DataFrame(np.random.RandomState(3).rand(12), columns=['y'])
+
+    model = LinearRegression().fit(X_train, y_train)
+    _, _, metrics = trainer.evaluate_model(
+        model, X_train, y_train, X_test, y_test)
+
+    for split in ('train', 'test'):
+        assert 'adj_r2' in metrics[split]
+        assert isinstance(metrics[split]['adj_r2'], float)
+        assert metrics[split]['adj_r2'] <= metrics[split]['r2']

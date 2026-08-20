@@ -129,7 +129,7 @@ def visualize_results() -> None:
         with col1:
             st.markdown("#### Training Set")
             metrics_train = st.session_state.metrics["train"]
-            st.metric("R² Score", f"{metrics_train['r2']:.4f}")
+            show_r2(metrics_train)
             st.metric("MSE", f"{metrics_train['mse']:.4f}")
 
         with col2:
@@ -137,7 +137,7 @@ def visualize_results() -> None:
             if not st.session_state.trainset_only:
                 st.markdown("#### Test Set")
                 metrics_test = st.session_state.metrics["test"]
-                st.metric("R² Score", f"{metrics_test['r2']:.4f}")
+                show_r2(metrics_test)
                 st.metric("MSE", f"{metrics_test['mse']:.4f}")
             else:
                 st.markdown("#### Warning")
@@ -145,6 +145,35 @@ def visualize_results() -> None:
                     "Performance metrics only for training set. "
                     "Results may not be realistic due to small dataset."
                 )
+
+
+def show_r2(metrics: dict, label: str = "R² Score") -> None:
+    """Show R² together with its adjusted counterpart.
+
+    Adjusted R² is missing from models saved before it was added, and is
+    undefined when the sample count does not exceed the predictor count by at
+    least two. Both cases render as "n/a" rather than breaking the page.
+
+    Args:
+        metrics (dict): One side of the metrics dict, i.e. its 'train' or
+            'test' entry.
+        label (str): Caption for the plain R² figure.
+    """
+    st.metric(label, f"{metrics['r2']:.4f}")
+
+    adjusted = metrics.get("adj_r2")
+    if adjusted is None:
+        st.metric(
+            "Adjusted R²", "n/a",
+            help="Undefined here: too few samples for the number of features."
+        )
+    else:
+        st.metric(
+            "Adjusted R²", f"{adjusted:.4f}",
+            help="R² charged for the number of predictors. Unlike plain R², it "
+                 "can fall when an added feature earns nothing, so it is the "
+                 "one to compare models on different feature sets with."
+        )
 
 
 def plot_results():
@@ -511,7 +540,7 @@ def display_metrics(packet):
             st.markdown("#### Training Set")
             if metrics.get("train"):
                 metrics_train = metrics["train"]
-                st.metric("R² Score", f"{metrics_train['r2']:.4f}")
+                show_r2(metrics_train)
                 st.metric("MSE", f"{metrics_train['mse']:.4f}")
             else:
                 st.warning("No training metrics")
@@ -520,7 +549,7 @@ def display_metrics(packet):
             st.markdown("#### Test Set")
             if metrics.get("test"):
                 metrics_test = metrics["test"]
-                st.metric("R² Score", f"{metrics_test['r2']:.4f}")
+                show_r2(metrics_test)
                 st.metric("MSE", f"{metrics_test['mse']:.4f}")
             else:
                 st.warning("No test set metrics")

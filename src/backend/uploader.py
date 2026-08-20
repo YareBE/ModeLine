@@ -10,6 +10,7 @@ All functions include type hints, comprehensive docstrings, and robust error han
 
 import pandas as pd
 import sqlite3
+from pathlib import Path
 import joblib
 from typing import BinaryIO, Dict, Any
 
@@ -226,3 +227,30 @@ def upload_joblib(file: BinaryIO) -> Dict[str, Any]:
         if not packet.get("app") or packet.get("app") != 'ModeLine':
             raise InvalidJoblibPacket("This joblib file is not from ModeLine!")
         return packet
+
+
+# Ships with the app so it can be tried without hunting for a file
+SAMPLE_DATASET = (
+    Path(__file__).resolve().parents[2] / "data" / "sample_house_prices.csv"
+)
+
+
+def load_sample_dataset() -> pd.DataFrame:
+    """Load the example dataset bundled with ModeLine.
+
+    The file is synthetic house-price data with a genuine linear relationship
+    behind it, so a visitor can see the whole workflow produce a sensible model
+    without supplying a dataset of their own. See data/README.md for how it was
+    generated.
+
+    Returns:
+        pd.DataFrame: The example dataset, with no missing values.
+
+    Raises:
+        FileNotFoundError: If the bundled file is missing from the installation.
+    """
+    if not SAMPLE_DATASET.exists():
+        raise FileNotFoundError(
+            f"The bundled example dataset is missing: {SAMPLE_DATASET}"
+        )
+    return pd.read_csv(SAMPLE_DATASET)

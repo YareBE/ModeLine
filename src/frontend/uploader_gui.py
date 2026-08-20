@@ -8,6 +8,7 @@ sys.path.append(root_path)
 
 from backend.uploader import (
     dataset_error_handler,
+    load_sample_dataset,
     upload_joblib
 )  # noqa: E402
 
@@ -33,7 +34,16 @@ def upload_file():
         help="Supported formats: CSV, Excel, SQLite and Joblib"
     )
 
+    # Offer the bundled dataset, so the app can be tried without one to hand
+    if uploaded_file is None:
+        load_example()
+
     if st.session_state.file != uploaded_file:
+        # An example dataset is loaded and nothing was uploaded: leave it be,
+        # otherwise every rerun would reset it away
+        if uploaded_file is None and st.session_state.get("sample_loaded"):
+            return None
+
         # Reset session state only when file actually changes
         reset_session_state()
 
@@ -62,6 +72,7 @@ def reset_session_state():
             # Reset objects to None
             st.session_state[key] = None
     st.session_state["trainset_only"] = False
+    st.session_state["sample_loaded"] = False
 
 
 def handle_data_file(uploaded_file, extension):
@@ -92,3 +103,28 @@ def handle_model_file(uploaded_file):
                 uploaded_file.name.replace('.joblib', '')
             )
             st.success("✅ Model correctly loaded.")
+
+
+def load_example():
+    """Offer the bundled example dataset as a one-click alternative to uploading.
+
+    Without this, a first-time visitor meets an empty file uploader and has to
+    find a dataset of their own before seeing the app do anything.
+
+    Side effects:
+        - Sets ``df`` and ``sample_loaded`` in ``st.session_state``.
+    """
+    st.caption("No dataset to hand?")
+    if st.button("Load example dataset",
+                 help="240 rows of synthetic house-price data, ready to model"):
+        reset_session_state()
+        try:
+            st.session_state.df = load_sample_dataset()
+        except Exception as e:
+            st.error(f"Could not load the example dataset: {e}")
+            return
+
+        # No uploaded file backs this dataset, so mark it to survive reruns
+        st.session_state.file = None
+        st.session_state.sample_loaded = True
+        st.success("✅ Example dataset loaded.")

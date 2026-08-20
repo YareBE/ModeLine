@@ -78,7 +78,8 @@ class Interface:
             "model": None,
             "model_name": None,
             "file": None,
-            "loaded_packet": None
+            "loaded_packet": None,
+            "sample_loaded": False
         }
 
         # Only initialize missing keys to preserve existing state

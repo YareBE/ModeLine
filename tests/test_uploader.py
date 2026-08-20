@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from io import BytesIO
 from src.backend.uploader import (_upload_csv, _upload_excel,
-    dataset_error_handler)
+    dataset_error_handler, load_sample_dataset)
 
 @pytest.fixture
 def sample_df():
@@ -107,3 +107,23 @@ class TestErrorHandler:
         buffer = BytesIO(b"test")
         with pytest.raises(ValueError, match="Unsupported file extension: txt"):
             dataset_error_handler(buffer, 'txt')
+
+
+# --- BUNDLED EXAMPLE DATASET ---
+
+def test_sample_dataset_loads():
+    """The bundled dataset must ship with the app and load cleanly, since the
+    'Load example dataset' button is the first thing a visitor sees."""
+    df = load_sample_dataset()
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) > 0
+
+
+def test_sample_dataset_is_ready_to_model():
+    """It has to go straight through the workflow: every column numeric, no
+    missing values, and enough rows for a train/test split."""
+    df = load_sample_dataset()
+    assert df.isna().sum().sum() == 0
+    assert all(pd.api.types.is_numeric_dtype(df[c]) for c in df.columns)
+    assert len(df) >= 10
+    assert len(df.columns) >= 2

@@ -4,6 +4,8 @@
 
 **ModeLine** is a web application for creating and visualizing simple and multiple linear regression models with minimal effort.
 
+**[Try it here](https://modeline.streamlit.app/)** — no installation needed. The app ships with an example dataset, so you can go from opening it to a fitted model in a few clicks.
+
 ---
 
 ## Contents
@@ -21,15 +23,26 @@
 
 ## About
 
-ModeLine is an easy-to-use application for creating and visualizing linear regression models from any dataset. Users can upload datasets in multiple formats: .csv, .xslx, .db, etc. But also load previously saved scikit-learn models in a Modeline-Joblib format.
+ModeLine is an easy-to-use application for creating and visualizing linear regression models from any dataset. Users can upload datasets in several formats: .csv, .xls, .xlsx, .db and .sqlite. But also load previously saved scikit-learn models in a Modeline-Joblib format.
 
-The results can be visualized whit a clean, modern UI. The app provides: the model formula, evaluation metrics (R², MSE), descriptive and interactive charts using Plotly, functionalities to make predictions with your model and the option to download the models you create for reusability.
+> **Note on loading models.** Saved models are joblib files, and joblib uses pickle
+> underneath, so loading one executes code from that file. Only load `.joblib` models you
+> produced yourself or obtained from someone you trust. This is inherent to the format, not
+> specific to ModeLine, and it applies equally to any scikit-learn model saved this way.
 
-ModeLine adheres to high standards of flexibility, reusability, and reliability, utilizing a well-known software design methodology (Scrum) and patterns. These patterns ensure the following benefits:
+The results can be visualized with a clean, modern UI. The app provides: the model formula, evaluation metrics (R², adjusted R², MSE), descriptive and interactive charts using Plotly, functionalities to make predictions with your model and the option to download the models you create for reusability.
 
-  - Modularity: Different parts of the library can function independently, enhancing the library's modularity and allowing for easier maintenance and updates.
-  - Testability: Improved separation of concerns makes the code more testable.
-  - Maintainability: Clear structure and separation facilitate better management of the codebase.
+Both R² and adjusted R² are reported because they answer different questions. Plain R² never decreases when a predictor is added, even a useless one, so it cannot be used to compare models fitted on different feature sets — which is precisely what this app invites you to do. Adjusted R² charges for each extra predictor and can therefore fall when a feature earns nothing.
+
+The application is split into a backend that holds the data and model logic and a frontend
+that holds the Streamlit interface. The split is what makes the project testable: the model
+code in `src/backend/trainer.py` and `src/backend/serializer.py` imports no Streamlit at all,
+and the suite as a whole runs headlessly in CI without ever starting the app. The one
+exception is `src/backend/preprocessing.py`, which imports Streamlit purely for its
+`@st.cache_data` decorator.
+
+It was built over several sprints following Scrum, which is how the work was organised rather
+than how the code is structured.
 
 This project is ideal for students learning linear regression, beginner programmers, or experienced users like data scientists who need to quickly create regression models.
 
@@ -38,6 +51,7 @@ This project is ideal for students learning linear regression, beginner programm
 ## Features
 
 - Simple and modern web interface
+- Example dataset built in, for trying the app without one of your own
 - Multiple dataset format support
 - Data preprocessing (null handling, parameters selection, generation seed...)
 - Create simple and multiple linear regression models
@@ -49,14 +63,14 @@ This project is ideal for students learning linear regression, beginner programm
 
 ## Installation
 
-Follow this steps to start using ModeLine in your local Machine.
+Follow these steps to start using ModeLine in your local Machine.
 The instructions are separated for Windows and Linux/macOS.
 
 ---
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.11+
 - Git
 - pip (usually included with Python)
 - (Optional) Virtual environment
