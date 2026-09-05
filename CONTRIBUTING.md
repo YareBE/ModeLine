@@ -8,7 +8,7 @@ The following is a set of guidelines for contributing to ModeLine. These are jus
 
 If you have not already done it, set up the repository on your local machine by following the installation guide:
 
-[Installation Guide](https://github.com/YareBE/ModeLine/blob/main/README.md#installation)
+[Installation Guide](README.md#installation)
 
 ## Project Structure
 

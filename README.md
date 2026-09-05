@@ -62,8 +62,7 @@ This project is ideal for students learning linear regression, beginner programm
 
 ## Installation
 
-Follow these steps to start using ModeLine in your local Machine.
-Follow these steps to start using ModeLine in your local Machine.
+Follow these steps to start using ModeLine on your local machine.
 The instructions are separated for Windows and Linux/macOS.
 
 ---
@@ -117,10 +116,10 @@ streamlit run src/frontend/modeline.py
 
 ## User handbook
 
-Although the app provides an usage guide, here is a well detailed and visual-supported one, to make things as clear as possible:
+Although the app provides a usage guide, here is a well detailed and visual-supported one, to make things as clear as possible:
 
 1. First of all, upload a dataset (`.csv`, `.xlsx`, `.db`...) or an existing model (`.joblib`). You can always upload a new file using this widget.
-Please keep in mind that if your dataset has less than 10 rows, some app functionalities described below such as set-splitting will vary or not be able.
+Please keep in mind that if your dataset has less than 10 rows, some app functionalities described below such as set-splitting will vary or not be available.
 ![upload screen](./images/upload_screen.png)
 2. If you load a modeline-joblib file, you can immediately visualize its results and make predictions.
 ![loaded model screen](./images/loaded_model_screen.png)
@@ -140,9 +139,9 @@ If you change your mind, you can always start from the beginning selecting new p
 ---
 
 ## Feedback and Contributions
-We've made every effort to make out application the most complete possible, however we may have encountered many errors. Whether you have feedback on features, have encountered any bugs, or have suggestions for enhancements, we're eager to hear from you. Your insights make ModeLine more robust and user-friendly.
+We've made every effort to make our application as complete as possible, however we may have missed some errors. Whether you have feedback on features, have encountered any bugs, or have suggestions for enhancements, we're eager to hear from you. Your insights make ModeLine more robust and user-friendly.
 
-Please feel free to contribute by submitting an issue or joining the discussions. Each contribution helps us to grow and improve. Please check [CONTRIBUTING.md](https://github.com/YareBE/ModeLine/blob/main/CONTRIBUTING.md) for further details.
+Please feel free to contribute by submitting an issue or joining the discussions. Each contribution helps us to grow and improve. Please check [CONTRIBUTING.md](CONTRIBUTING.md) for further details.
 
 We appreciate your support and look forward to making our product even better with your help!
 
@@ -150,17 +149,17 @@ We appreciate your support and look forward to making our product even better wi
 
 ## License
 
-This software is licensed under the [MIT LICENSE](https://github.com/YareBE/ModeLine/blob/main/LICENSE)
+This software is licensed under the [MIT LICENSE](LICENSE)
 
 ---
 
 ## Contacts
 
-For more details about out products, services, or any general information regarding the application, feel free to reach out to us. We are here to provide support and answer any questions you may have. You can contact our team at:
+For more details about our products, services, or any general information regarding the application, feel free to reach out to us. We are here to provide support and answer any questions you may have. You can contact our team at:
 
 - Pablo Fernández Ríos — [pablo.fernandez.rios@udc.es](mailto:pablo.fernandez.rios@udc.es)
 - Yare Brea Espinosa — [yare.bespinosa@udc.es](mailto:yare.bespinosa@udc.es)
-- Rodrigo Marino Álvarez — [rodrigo.marino.alvarez@udc.es](mailto:rodrigo.marino.alvarez@udc.es)
+- Rodrigo Mariño Álvarez — [rodrigo.marino.alvarez@udc.es](mailto:rodrigo.marino.alvarez@udc.es)
 
-We look forward to assisting you and ensuring your experience with our product is succesful and enjoyable!
+We look forward to assisting you and ensuring your experience with our product is successful and enjoyable!
 
